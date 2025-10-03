@@ -6,12 +6,13 @@
 //
 
 import SwiftUI
+import Cocoa
 
 @main
-struct to_you_App: App {
+struct ToYouApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
+        Settings { EmptyView() } // menubar‑only
     }
 }
