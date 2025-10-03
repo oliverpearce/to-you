@@ -11,23 +11,18 @@ struct HUDTimerView: View {
     @ObservedObject var model: AppModel
 
     var body: some View {
-        // HUD has no rain (per request); clean ASCII box
-        let hudText = AsciiUI.hud(
-            time: model.formattedTimeLeft,
-            progress: model.progress,
-            rain: "",
-            width: 34
-        )
-
-        return Text(hudText)
-            .font(.system(size: 11, design: .monospaced))
-            .padding(10)
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(.ultraThinMaterial)
-                    .shadow(radius: 10)
-            )
-            .fixedSize(horizontal: false, vertical: true)
-            .onTapGesture { model.toggleStartStop() }
+        ZStack {
+            RoundedRectangle(cornerRadius: 14)
+                .fill(.ultraThinMaterial)
+                .shadow(radius: 10)
+            VStack(spacing: 6) {
+                Text(model.formattedTimeLeft)
+                    .font(.system(size: 22, weight: .semibold, design: .monospaced))
+                ProgressView(value: model.progress)
+                    .frame(width: 120)
+            }.padding(12)
+        }
+        .frame(width: 160, height: 72)
+        .onTapGesture { model.toggleStartStop() }
     }
 }

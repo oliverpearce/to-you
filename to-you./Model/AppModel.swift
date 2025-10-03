@@ -12,16 +12,10 @@ final class AppModel: ObservableObject {
     @Published private(set) var totalSeconds: Int = UserDefaults.standard.integer(forKey: "lastDuration").nonZeroOrDefault(25 * 60)
     @Published private(set) var secondsLeft: Int = 25 * 60
     @Published private(set) var isRunning: Bool = false
-    @Published private(set) var isPaused: Bool = false
-
     @Published var increaseContrastIcon: Bool = UserDefaults.standard.bool(forKey: "increaseContrastIcon")
     @Published var hudVisible: Bool = UserDefaults.standard.bool(forKey: "hudVisible")
-    @Published var showRainInPopover: Bool = UserDefaults.standard.bool(forKey: "showRainInPopover")
 
-    // ASCII rain published each tick (used only in popover if enabled)
-    @Published private(set) var asciiRain: String = ""
-
-    // Callbacks for AppDelegate wiring
+    // Callbacks for AppDelegate UI wiring
     var onTick: ((Int) -> Void)?
     var onFinish: (() -> Void)?
 
@@ -35,61 +29,28 @@ final class AppModel: ObservableObject {
                 guard let self else { return }
                 self.secondsLeft = max(0, left)
                 self.isRunning = self.engine.isRunning
-                if self.isRunning { self.isPaused = false }
-                self.asciiRain = RainASCII.frame(width: 26, height: 5, seed: left)
                 self.onTick?(left)
-                if left == 0 {
-                    self.isRunning = false
-                    self.isPaused = false
-                    self.onFinish?()
-                }
+                if left == 0 { self.onFinish?() }
             }.store(in: &bag)
     }
 
-    // MARK: API
+    // MARK: - API used by views
     func start(minutes: Int) {
         let seconds = max(1, minutes) * 60
         totalSeconds = seconds
         UserDefaults.standard.set(seconds, forKey: "lastDuration")
-        asciiRain = RainASCII.frame(width: 26, height: 5, seed: seconds)
-        isPaused = false
         engine.start(duration: seconds)
     }
 
-    func resume() {
-        guard isPaused, secondsLeft > 0 else { return }
-        isPaused = false
-        engine.start(duration: secondsLeft)
-    }
-
-    func pause() {
-        guard isRunning else { return }
-        engine.stop()
-        isRunning = false
-        isPaused = true
-    }
-
-    func stop() {
-        engine.stop()
-        isRunning = false
-        isPaused = false
-        secondsLeft = 0
-    }
-
-    func reset() {
-        engine.stop()
-        isRunning = false
-        isPaused = false
-        secondsLeft = totalSeconds
-        asciiRain = RainASCII.frame(width: 26, height: 5, seed: secondsLeft)
-    }
-
     func restart() {
-        isPaused = false
         engine.start(duration: totalSeconds)
     }
 
-    func toggleStartStop() { isRunning ? pause() : resume() }
+    func stop() { engine.stop() }
+
+    func toggleStartStop() {
+        isRunning ? stop() : restart()
+    }
 
     func formatted(_ seconds: Int) -> String {
         let m = seconds / 60, s = seconds % 60

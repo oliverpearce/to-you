@@ -33,6 +33,6 @@ final class TimerEngine {
 
     func stop() {
         timer?.cancel(); timer = nil; endDate = nil
-        // Intentionally do not send a final 0 here; callers manage state when stopping/pausing.
+        subject.send(0)
     }
 }
