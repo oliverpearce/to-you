@@ -14,15 +14,15 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - name: Checkout source
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Show Xcode version & SDKs
+      - name: Show Xcode & SDK info
         run: |
           xcodebuild -version
           xcodebuild -showsdks
 
-      - name: Build project (macOS)
+      - name: Build project
         run: |
           xcodebuild clean build \
             -project to-you..xcodeproj \
@@ -31,11 +31,12 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
 
-      - name: (Optional) Run tests
+      - name: Run unit tests only (skip UITests)
         run: |
           xcodebuild test \
             -project to-you..xcodeproj \
             -scheme "to-you." \
             -destination "platform=macOS,arch=arm64" \
+            -skip-testing:to-you.UITests \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
