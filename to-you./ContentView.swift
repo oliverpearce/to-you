@@ -8,17 +8,14 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject var model = AppModel()
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
+        TimerPopoverView(
+            model: model,
+            showHUD: { print("showHUD called") },
+            hideHUD: { print("hideHUD called") }
+        )
         .padding()
     }
-}
-
-#Preview {
-    ContentView()
 }
