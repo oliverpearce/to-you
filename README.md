@@ -17,10 +17,10 @@ to-you./
 │  └─ TimerEngine.swift
 ├─ UI/
 │  ├─ AsciiUI.swift
-|   ├  ─ FloatingHUD.swift
+│  ├─ FloatingHUD.swift
 │  ├─ HUDTimerView.swift
-    └   ─ TimerPopoverView.swift
+│  └─ TimerPopoverView.swift
 └─ Resources/
-   └─ Assets.xcassets (add umbrella SF Symbol as template if desired)
+   └─ Assets.xcassets 
 ```
 
