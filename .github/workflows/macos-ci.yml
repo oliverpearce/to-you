@@ -1,0 +1,32 @@
+name: macOS CI
+
+on:
+  push:
+    branches:
+      - main
+      - "release/*"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show Xcode & SDK info
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks
+
+      - name: Build project
+        run: |
+          xcodebuild clean build \
+            -project to-you..xcodeproj \
+            -scheme "to-you." \
+            -destination "platform=macOS,arch=arm64" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
