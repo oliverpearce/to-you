@@ -17,7 +17,7 @@ struct TimerPopoverView: View {
     var body: some View {
         VStack(spacing: 14) {
             HStack {
-                Text("Timer").font(.headline)
+                Text("to-you. <3").font(.headline)
                 Spacer()
                 Button(action: { model.isRunning ? model.stop() : model.restart() }) {
                     Text(model.isRunning ? "Stop" : "Start")
@@ -30,14 +30,12 @@ struct TimerPopoverView: View {
                     .frame(width: 70)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit { model.start(minutes: minutesInput) }
-                Button("Start") { model.start(minutes: minutesInput) }
+//                Button("Start") { model.start(minutes: minutesInput) }
             }
-
-            Slider(value: Binding(get: { Double(minutesInput) }, set: { minutesInput = Int($0) }), in: 1...240, step: 1)
 
             HStack {
                 ForEach([5, 15, 25, 50, 90, 120], id: \.self) { m in
-                    Button("\(m)m") { minutesInput = m; model.start(minutes: m) }
+                    Button("\(m)") { minutesInput = m; model.start(minutes: m) }
                         .buttonStyle(.bordered)
                 }
             }
@@ -60,14 +58,14 @@ struct TimerPopoverView: View {
                         newVal ? showHUD() : hideHUD()
                     })
                 )
-                Spacer()
-                Toggle("Increase icon contrast", isOn: Binding(
-                    get: { model.increaseContrastIcon },
-                    set: { newVal in
-                        model.increaseContrastIcon = newVal
-                        UserDefaults.standard.set(newVal, forKey: "increaseContrastIcon")
-                    })
-                )
+//                Spacer()
+//                Toggle("Increase icon contrast", isOn: Binding(
+//                    get: { model.increaseContrastIcon },
+//                    set: { newVal in
+//                        model.increaseContrastIcon = newVal
+//                        UserDefaults.standard.set(newVal, forKey: "increaseContrastIcon")
+//                    })
+//                )
             }
         }
         .padding()
