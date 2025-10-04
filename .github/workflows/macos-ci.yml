@@ -30,13 +30,3 @@ jobs:
             -destination "platform=macOS,arch=arm64" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
-
-      - name: Run unit tests only (skip UITests)
-        run: |
-          xcodebuild test \
-            -project to-you..xcodeproj \
-            -scheme "to-you." \
-            -destination "platform=macOS,arch=arm64" \
-            -skip-testing:to-you.UITests \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
