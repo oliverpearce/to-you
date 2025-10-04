@@ -25,8 +25,8 @@ jobs:
       - name: Build project (macOS)
         run: |
           xcodebuild clean build \
-            -project YourProjectName.xcodeproj \
-            -scheme "YourSchemeName" \
+            -project to-you..xcodeproj \
+            -scheme "to-you." \
             -destination "platform=macOS,arch=arm64" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
@@ -34,8 +34,8 @@ jobs:
       - name: (Optional) Run tests
         run: |
           xcodebuild test \
-            -project YourProjectName.xcodeproj \
-            -scheme "YourSchemeName" \
+            -project to-you..xcodeproj \
+            -scheme "to-you." \
             -destination "platform=macOS,arch=arm64" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
