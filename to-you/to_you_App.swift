@@ -13,6 +13,6 @@ struct ToYouApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
-        Settings { EmptyView() } // menubar‑only
+        Settings { SettingsView() }
     }
 }
