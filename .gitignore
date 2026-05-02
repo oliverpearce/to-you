@@ -1,0 +1,31 @@
+# Claude Code
+.claude/
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V8
+.Trashes
+Icon?
+
+# Xcode build output
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.moved-aside
+
+# Xcode local config (user-specific, not team-shared)
+*.xcworkspace/xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Credentials / secrets
+*.pem
+*.p12
+*.mobileprovision
+*.xcconfig.local
