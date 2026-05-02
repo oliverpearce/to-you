@@ -30,7 +30,7 @@
                                                   
 ```
 
-a productivity timer tool brought to-you by oliver pearce c:
+a productivity timer tool brought to-you by [oliver pearce](https://github.com/oliverpearce) c:
 
 # Project structure
 
