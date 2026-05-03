@@ -8,7 +8,7 @@ import SwiftUI
 final class SettingsWindowController {
     private var window: NSWindow?
 
-    func show(model: AppModel) {
+    func show() {
         if window == nil {
             let w = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 380, height: 480),

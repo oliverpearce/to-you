@@ -1,4 +1,4 @@
-# Claude Code
+# Claude Code — all local config and skills
 .claude/
 
 # macOS
@@ -23,6 +23,9 @@ xcuserdata/
 # Swift Package Manager
 .build/
 .swiftpm/
+
+# Local planning docs
+APP_STORE_SUBMISSION.md
 
 # Credentials / secrets
 *.pem

@@ -11,6 +11,7 @@ struct HUDTimerView: View {
     @AppStorage("selectedFont")    private var fontTheme: FontTheme = .system
     @AppStorage("selectedWeather") private var weather: WeatherType = .rain
     @State private var isHovering = false
+    @State private var frozenTick: Int? = Int(Date().timeIntervalSinceReferenceDate)
 
     var body: some View {
         GeometryReader { geo in
@@ -29,7 +30,8 @@ struct HUDTimerView: View {
                 // LAYER 0: Weather scene
                 if showScene {
                     TimelineView(.periodic(from: .now, by: 1.0)) { context in
-                        let tick = Int(context.date.timeIntervalSinceReferenceDate)
+                        let rawTick = Int(context.date.timeIntervalSinceReferenceDate)
+                        let tick = frozenTick ?? rawTick
                         Text(WeatherScene.frame(width: cols, height: rows, tick: tick,
                                                weather: weather, finished: model.isFinished,
                                                showClouds: showClouds))
@@ -91,6 +93,13 @@ struct HUDTimerView: View {
         .liquidGlassBackground()
         .contentShape(RoundedRectangle(cornerRadius: 14))
         .onHover { isHovering = $0 }
+        .onChange(of: model.isRunning) { _, running in
+            if running {
+                frozenTick = nil
+            } else {
+                frozenTick = Int(Date().timeIntervalSinceReferenceDate)
+            }
+        }
     }
 
     private func circleButton(icon: String, action: @escaping () -> Void) -> some View {

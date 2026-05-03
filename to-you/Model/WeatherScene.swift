@@ -71,35 +71,33 @@ struct WeatherScene {
         return lines.prefix(height).joined(separator: "\n")
     }
 
-    // MARK: - Rain (diagonal '/' streaks, scrolling left 1 col/sec)
+    // MARK: - Rain
     //
-    // Each streak occupies rows [r, r+dropLen) in the same column family.
-    // As tick grows: drops fall 1 row/sec AND shift 1 col/sec to the left.
-    // The per-streak diagonal (adj cols left per adj rows down) makes each
-    // streak render as a '///' diagonal going bottom-left → top-right.
+    // Field approach: show '/' at (r,c) when uMod = (r − tick + phase) mod period < dropLen.
+    // u = r − tick is FIXED for a char moving (+1 row, −1 col) per tick, so any visible
+    // '/' is guaranteed at (r+1, c−1) the next tick — zero mid-screen despawning.
+    // period = height + dropLen ensures each drop lives long enough to cross the screen.
 
     private static func rainRows(width: Int, height: Int, tick: Int) -> [String] {
         guard height > 0, width > 0 else { return [] }
         var grid = Array(repeating: Array(repeating: Character(" "), count: width), count: height)
-        let scroll = tick % width   // whole scene scrolls left 1 col/sec
 
-        // Iterate enough base columns to cover wrapping + diagonal drift
-        let span = width + height
-        for baseCol in 0..<(span * 2) {
-            var rng = SeededRandom(seed: colSeed(baseCol, salt: 77))
-            guard rng.nextDouble() < 0.48 else { continue }
+        let numDiags = width + height - 1
+        for d in 0..<numDiags {
+            var rng = SeededRandom(seed: colSeed(d, salt: 77))
+            guard rng.nextDouble() < 0.88 else { continue }
 
-            let period  = 5 + Int(rng.nextDouble() * 4)            // 5–8 rows between heads
+            let dropLen = 1 + Int(rng.nextDouble() * 2)   // 1–2 chars
+            let period  = height + dropLen                 // guarantees full-screen traversal
             let phase   = Int(rng.nextDouble() * Double(period))
-            let dropLen = min(2 + Int(rng.nextDouble() * 3), period - 1) // 2–4, < period
 
-            for row in 0..<height {
-                let adj = ((row - tick + phase) % period + period) % period
-                guard adj < dropLen else { continue }
-                // adj=0 → head column; adj=k → k cols further left (diagonal '/' shape)
-                let rawCol = baseCol - adj - scroll
-                let dc = ((rawCol % width) + width) % width
-                grid[row][dc] = "/"
+            let rMin = max(0, d - (width - 1))
+            let rMax = min(height - 1, d)
+            for r in rMin...rMax {
+                let uMod = ((r - tick + phase) % period + period) % period
+                if uMod < dropLen {
+                    grid[r][d - r] = "/"
+                }
             }
         }
         return grid.map { String($0) }

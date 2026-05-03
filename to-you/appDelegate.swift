@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private let popover = NSPopover()
     let model = AppModel()
     private let hud = FloatingHUD()
+    private let settings = SettingsWindowController()
     private var bag = Set<AnyCancellable>()
     private var alarmSound: NSSound?
     private var muteWorkItem: DispatchWorkItem?
@@ -54,9 +55,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         // Popover content
         let content = TimerPopoverView(
             model: model,
-            openSettings: {
-                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-                NSApp.activate(ignoringOtherApps: true)
+            openSettings: { [weak self] in
+                guard let self else { return }
+                if self.model.isRunning { self.model.pause() }
+                self.popover.performClose(nil)
+                self.settings.show()
             },
             closePopover: { [weak self] in
                 self?.popover.performClose(nil)

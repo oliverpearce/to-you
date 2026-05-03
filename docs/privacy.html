@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — to-you</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --fg:        #1d1d1f;
+      --fg-2:      #6e6e73;
+      --fg-3:      #86868b;
+      --border:    #d2d2d7;
+      --border-2:  rgba(0,0,0,0.08);
+      --fill:      #f5f5f7;
+      --blue:      #0071e3;
+      --green:     #34c759;
+      --radius-sm: 10px;
+      --radius-md: 18px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                   "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background: #fff;
+      color: var(--fg);
+      font-size: 17px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid var(--border-2);
+    }
+    .nav-inner {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 0 22px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-logo {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--fg);
+      text-decoration: none;
+      letter-spacing: -0.01em;
+    }
+    .nav-sep {
+      color: var(--border);
+      font-size: 22px;
+      font-weight: 200;
+      line-height: 1;
+      margin-top: -2px;
+    }
+    .nav-page {
+      font-size: 15px;
+      color: var(--fg-2);
+    }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(180deg, #f5f5f7 0%, #ffffff 100%);
+      text-align: center;
+      padding: 80px 22px 72px;
+    }
+    .hero-tag {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--fg-2);
+      margin-bottom: 14px;
+    }
+    .hero h1 {
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.05;
+      color: var(--fg);
+      margin-bottom: 22px;
+    }
+    .hero-sub {
+      font-size: 19px;
+      color: var(--fg-2);
+      max-width: 540px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+
+    /* ── Main ── */
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 64px 22px 96px;
+    }
+
+    /* ── Summary card ── */
+    .summary-card {
+      background: var(--fill);
+      border-radius: var(--radius-md);
+      padding: 32px 36px;
+      margin-bottom: 64px;
+    }
+    .summary-card h2 {
+      font-size: 21px;
+      font-weight: 600;
+      color: var(--fg);
+      margin-bottom: 22px;
+      letter-spacing: -0.01em;
+    }
+    .data-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 0;
+      border-top: 1px solid var(--border-2);
+    }
+    .data-row:first-of-type { border-top: none; padding-top: 0; }
+    .data-row:last-of-type  { padding-bottom: 0; }
+
+    .check-icon {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+    .check-icon svg {
+      width: 14px;
+      height: 14px;
+      stroke: #fff;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+    .data-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--fg);
+      line-height: 1.3;
+    }
+    .data-detail {
+      font-size: 14px;
+      color: var(--fg-2);
+      margin-top: 2px;
+    }
+
+    /* ── Sections ── */
+    .sections-grid {
+      display: grid;
+      gap: 40px;
+    }
+    section {
+      padding-bottom: 40px;
+      border-bottom: 1px solid var(--border);
+    }
+    section:last-of-type {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    section h2 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      color: var(--fg);
+      margin-bottom: 14px;
+    }
+    section p {
+      font-size: 17px;
+      color: var(--fg);
+      line-height: 1.7;
+      margin-bottom: 14px;
+    }
+    section p:last-child { margin-bottom: 0; }
+
+    code {
+      font-family: "SF Mono", "Menlo", "Courier New", monospace;
+      font-size: 14px;
+      background: var(--fill);
+      border-radius: 5px;
+      padding: 2px 6px;
+      color: var(--fg);
+    }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--fill);
+      border-top: 1px solid var(--border);
+    }
+    .footer-inner {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 32px 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      text-align: center;
+    }
+    .footer-umbrella {
+      font-size: 28px;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    footer p {
+      font-size: 13px;
+      color: var(--fg-3);
+    }
+
+    @media (max-width: 600px) {
+      .summary-card { padding: 24px 20px; }
+      .hero          { padding: 60px 16px 56px; }
+      main           { padding: 48px 16px 80px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="#">☂ to-you</a>
+    <span class="nav-sep">/</span>
+    <span class="nav-page">Privacy Policy</span>
+  </div>
+</nav>
+
+<div class="hero">
+  <span class="hero-tag">Privacy</span>
+  <h1>Your data stays<br>on your device.</h1>
+  <p class="hero-sub">to-you doesn't collect, store, or share any information about you or how you use it. Full stop.</p>
+</div>
+
+<main>
+
+  <div class="summary-card">
+    <h2>At a glance</h2>
+
+    <div class="data-row">
+      <div class="check-icon">
+        <svg viewBox="0 0 16 16"><polyline points="2.5 8.5 6.5 12.5 13.5 4.5"/></svg>
+      </div>
+      <div>
+        <div class="data-label">No data collected</div>
+        <div class="data-detail">to-you gathers no personal information whatsoever</div>
+      </div>
+    </div>
+
+    <div class="data-row">
+      <div class="check-icon">
+        <svg viewBox="0 0 16 16"><polyline points="2.5 8.5 6.5 12.5 13.5 4.5"/></svg>
+      </div>
+      <div>
+        <div class="data-label">No network requests</div>
+        <div class="data-detail">The app never connects to the internet for any reason</div>
+      </div>
+    </div>
+
+    <div class="data-row">
+      <div class="check-icon">
+        <svg viewBox="0 0 16 16"><polyline points="2.5 8.5 6.5 12.5 13.5 4.5"/></svg>
+      </div>
+      <div>
+        <div class="data-label">No analytics or tracking</div>
+        <div class="data-detail">No third-party SDKs, no crash reporters, no telemetry</div>
+      </div>
+    </div>
+
+    <div class="data-row">
+      <div class="check-icon">
+        <svg viewBox="0 0 16 16"><polyline points="2.5 8.5 6.5 12.5 13.5 4.5"/></svg>
+      </div>
+      <div>
+        <div class="data-label">No account required</div>
+        <div class="data-detail">Download and use immediately — no sign-in, no email, no registration</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sections-grid">
+
+    <section>
+      <h2>What to-you does</h2>
+      <p>to-you is a Pomodoro timer that lives in your Mac menu bar. It tracks the time remaining in a focus or break session, plays an ASCII weather scene while you work, and reminds you when it's time to step away.</p>
+      <p>All of this happens entirely on your Mac. Your preferences — timer duration, weather scene, font — are stored using macOS's standard <code>UserDefaults</code> system, locally on your device, readable only by the app, and never transmitted anywhere.</p>
+    </section>
+
+    <section>
+      <h2>Data we collect</h2>
+      <p>None. to-you does not collect any data from any user at any time.</p>
+    </section>
+
+    <section>
+      <h2>Network access</h2>
+      <p>to-you makes no network requests. It has no server, no backend, and no cloud component. The app does not phone home, check for updates over the network, or transmit any information to any destination.</p>
+    </section>
+
+    <section>
+      <h2>Third-party services</h2>
+      <p>to-you contains no third-party analytics libraries, advertising SDKs, crash-reporting frameworks, or any other external code. The only frameworks used are Apple's own system libraries — SwiftUI, AppKit, and Combine.</p>
+    </section>
+
+    <section>
+      <h2>Children's privacy</h2>
+      <p>Because to-you collects no data of any kind, it presents no privacy risk to users of any age, including children.</p>
+    </section>
+
+    <section>
+      <h2>Changes to this policy</h2>
+      <p>If to-you ever changes its data practices, this page will be updated and the date in the footer will reflect that change. to-you does not currently, and has no plans to, collect any user data.</p>
+    </section>
+
+    <section>
+      <h2>Contact</h2>
+      <p>Questions about privacy? Reach out at <a href="mailto:oliverpearce13@gmail.com">oliverpearce13@gmail.com</a>.</p>
+    </section>
+
+  </div>
+
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-umbrella">☂</div>
+    <p>Copyright &copy; 2026 Oliver Pearce. All rights reserved.</p>
+    <p>Last updated: May 2026</p>
+  </div>
+</footer>
+
+</body>
+</html>
