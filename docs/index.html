@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>to-you — Menubar Pomodoro Timer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --fg:    #1d1d1f;
+      --fg-2:  #6e6e73;
+      --fg-3:  #86868b;
+      --border:#d2d2d7;
+      --fill:  #f5f5f7;
+      --blue:  #0071e3;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                   "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background: #fff;
+      color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Nav */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+    .nav-inner {
+      max-width: 980px; margin: 0 auto; padding: 0 22px;
+      height: 48px; display: flex; align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      font-size: 17px; font-weight: 600;
+      color: var(--fg); text-decoration: none;
+    }
+    nav a.nav-link {
+      font-size: 14px; color: var(--fg-2); text-decoration: none;
+    }
+    nav a.nav-link:hover { color: var(--fg); }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 100px 22px 80px;
+      background: linear-gradient(180deg, #f5f5f7 0%, #fff 100%);
+    }
+    .hero-umbrella { font-size: 72px; line-height: 1; margin-bottom: 24px; }
+    .hero h1 {
+      font-size: clamp(40px, 7vw, 72px);
+      font-weight: 700; letter-spacing: -0.03em;
+      color: var(--fg); line-height: 1.04; margin-bottom: 18px;
+    }
+    .hero-sub {
+      font-size: 19px; color: var(--fg-2);
+      max-width: 500px; margin: 0 auto 36px; line-height: 1.55;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: var(--fg);
+      color: #fff;
+      font-size: 14px; font-weight: 500;
+      padding: 10px 22px; border-radius: 980px;
+      text-decoration: none;
+      transition: opacity .15s;
+    }
+    .hero-badge:hover { opacity: 0.8; }
+    .hero-free {
+      display: block; font-size: 13px;
+      color: var(--fg-3); margin-top: 12px;
+    }
+
+    /* ASCII demo */
+    .ascii-demo {
+      max-width: 680px; margin: 64px auto;
+      padding: 0 22px;
+    }
+    .ascii-window {
+      background: #1c1c1e;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+    }
+    .ascii-titlebar {
+      background: #2c2c2e;
+      padding: 10px 14px;
+      display: flex; gap: 7px; align-items: center;
+    }
+    .dot {
+      width: 12px; height: 12px; border-radius: 50%;
+    }
+    .dot-red   { background: #ff5f57; }
+    .dot-yellow{ background: #febc2e; }
+    .dot-green { background: #28c840; }
+    .ascii-body {
+      padding: 20px 24px;
+      font-family: "SF Mono", "Menlo", "Courier New", monospace;
+      font-size: 13px; line-height: 1.5;
+      color: #98989d;
+      white-space: pre;
+    }
+    .ascii-timer { color: #ffffff; font-size: 22px; font-weight: 700; }
+
+    /* Features */
+    .features {
+      max-width: 860px; margin: 0 auto; padding: 0 22px 80px;
+    }
+    .features h2 {
+      font-size: 28px; font-weight: 700;
+      letter-spacing: -0.015em; text-align: center;
+      margin-bottom: 40px; color: var(--fg);
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+    .feature-card {
+      background: var(--fill); border-radius: 16px;
+      padding: 28px 24px;
+    }
+    .feature-icon { font-size: 28px; margin-bottom: 12px; }
+    .feature-card h3 {
+      font-size: 17px; font-weight: 600;
+      color: var(--fg); margin-bottom: 6px;
+    }
+    .feature-card p { font-size: 15px; color: var(--fg-2); line-height: 1.5; }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      background: var(--fill);
+    }
+    .footer-inner {
+      max-width: 980px; margin: 0 auto;
+      padding: 28px 22px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+    }
+    footer p { font-size: 13px; color: var(--fg-3); }
+    footer a { font-size: 13px; color: var(--fg-2); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) {
+      .hero { padding: 72px 16px 60px; }
+      .footer-inner { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="#">☂ to-you</a>
+    <a class="nav-link" href="privacy.html">Privacy</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-umbrella">☂</div>
+  <h1>Focus time,<br>minus the noise.</h1>
+  <p class="hero-sub">A Pomodoro timer that lives in your Mac menu bar. Rain plays while you work. Nothing else gets in the way.</p>
+  <a class="hero-badge" href="#">Coming to the Mac App Store</a>
+  <span class="hero-free">Free</span>
+</div>
+
+<div class="ascii-demo">
+  <div class="ascii-window">
+    <div class="ascii-titlebar">
+      <div class="dot dot-red"></div>
+      <div class="dot dot-yellow"></div>
+      <div class="dot dot-green"></div>
+    </div>
+    <div class="ascii-body">  .---.   .---------.   .----.
+ (     ) (           ) (      )
+  `---'   `---------'   `----'
+/    /  /  /  /  /  /  /  /  /
+  /  /  /  /  /  /  /  /  /
+/  /  /  /  /  /  /  /  /  /
+  /  /  /  /  /  /  /  /  /
+<span class="ascii-timer">       24:07       </span>
+</div>
+  </div>
+</div>
+
+<div class="features">
+  <h2>Built to disappear.</h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon">☂</div>
+      <h3>Menu bar only</h3>
+      <p>No Dock icon. No main window. Just an umbrella in the corner, ready when you are.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌧</div>
+      <h3>ASCII weather</h3>
+      <p>Rain, snow, or fog animates while the timer runs. Freeze it when you pause.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⏱</div>
+      <h3>Any duration</h3>
+      <p>From a quick five minutes to a long session. The timer shows right in the menu bar.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>Zero data collected</h3>
+      <p>No analytics, no network requests, no account. Runs entirely on your device.</p>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <p>Copyright &copy; 2026 Oliver Pearce</p>
+    <a href="privacy.html">Privacy Policy</a>
+  </div>
+</footer>
+
+</body>
+</html>
