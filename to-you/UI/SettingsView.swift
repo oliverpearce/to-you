@@ -10,14 +10,16 @@ struct SettingsView: View {
     @AppStorage("preset2")              private var preset2: Int = 30
     @AppStorage("preset3")              private var preset3: Int = 45
     @AppStorage("alarmVolume")          private var alarmVolume: Double = 0.5
-    @AppStorage("autoMuteAlarm")        private var autoMuteAlarm: Bool = false
-    @AppStorage("autoMuteDuration")     private var autoMuteDuration: Int = 5
     @AppStorage("menuBarStyle")         private var menuBarStyle: String = "compact"
     @AppStorage("selectedFont")         private var fontTheme: FontTheme = .system
     @AppStorage("selectedWeather")      private var weather: WeatherType = .rain
     @AppStorage("hudSize")              private var hudSize: HUDSize = .compact
-    @AppStorage("shortTimeFormat")      private var shortTimeFormat: Bool = false
+    @AppStorage("timeFormat")            private var timeFormat: TimeFormat = .clock
+    @AppStorage("showSeconds")          private var showSeconds: Bool = true
     @AppStorage("liquidGlass")          private var liquidGlass: Bool = true
+    @AppStorage("flashOnInterval")      private var flashOnInterval: Bool = true
+    @AppStorage("forceMuteAlarm")        private var forceMuteAlarm: Bool = false
+    @AppStorage("goldNotification")      private var goldNotification: Bool = false
     @AppStorage("notificationsEnabled") private var notificationsEnabled: Bool = true
     @AppStorage("launchAtLogin")        private var launchAtLogin: Bool = false
 
@@ -30,12 +32,12 @@ struct SettingsView: View {
             section {
                 HStack(spacing: 4) {
                     Text("timer presets (min):").foregroundStyle(.secondary)
-                    InfoTipButton("Quick-select durations shown as buttons in the popover.")
+                    InfoTipButton("Quick-select durations shown as buttons in the popover. Click a value to type it in directly.")
                 }
                 HStack(spacing: 20) {
-                    HoverStepper(value: $preset1, range: 1...180)
-                    HoverStepper(value: $preset2, range: 1...180)
-                    HoverStepper(value: $preset3, range: 1...180)
+                    HoverStepper(value: $preset1, range: 1...600)
+                    HoverStepper(value: $preset2, range: 1...600)
+                    HoverStepper(value: $preset3, range: 1...600)
                 }
             }
 
@@ -52,23 +54,24 @@ struct SettingsView: View {
                     Slider(value: $alarmVolume, in: 0...1)
                     Image(systemName: "speaker.wave.3.fill").foregroundStyle(.secondary)
                 }
-                Button("Test Alarm") {
-                    NotificationCenter.default.post(name: .testAlarm, object: nil)
+                HStack(spacing: 12) {
+                    Button("Test Alarm") {
+                        NotificationCenter.default.post(name: .testAlarm, object: nil)
+                    }
+                    .buttonStyle(.bordered)
+                    Toggle("force mute", isOn: $forceMuteAlarm)
                 }
-                .buttonStyle(.bordered)
-                HStack(spacing: 6) {
-                    Toggle("auto-mute after", isOn: $autoMuteAlarm)
-                    HoverStepper(value: $autoMuteDuration, range: 1...60)
-                    Text("sec")
-                    InfoTipButton("Silences the alarm after the set number of seconds (1–60).")
+                HStack(spacing: 4) {
+                    Toggle("gold notification", isOn: $goldNotification)
+                    InfoTipButton("Makes the timer-finished banner gold with a lustrous metallic finish.")
                 }
             }
 
             Divider()
 
-            // — Appearance —
+            // — Display —
             section {
-                Text("appearance:").foregroundStyle(.secondary)
+                Text("display:").foregroundStyle(.secondary)
                 HStack {
                     Text("font").foregroundStyle(.secondary)
                     Picker("", selection: $fontTheme) {
@@ -77,6 +80,32 @@ struct SettingsView: View {
                     .pickerStyle(.segmented)
                     .labelsHidden()
                 }
+                HStack {
+                    Text("time format").foregroundStyle(.secondary)
+                    Picker("", selection: $timeFormat) {
+                        ForEach(TimeFormat.allCases) { f in Text(f.rawValue).tag(f) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    InfoTipButton("hh:mm:ss — colon-separated (e.g. '25:00').\nhrs m s — wordy style (e.g. '25m 0s').")
+                }
+                HStack(spacing: 4) {
+                    Toggle("show seconds", isOn: $showSeconds)
+                    InfoTipButton("Shows seconds in the timer. On: '25:00' or '25m 0s' style. Off: shows only minutes ('25' or '25m').")
+                }
+                Button {
+                    NotificationCenter.default.post(name: .showHUD, object: nil)
+                } label: {
+                    Label("floating display", systemImage: "macwindow")
+                }
+                .buttonStyle(.bordered)
+            }
+
+            Divider()
+
+            // — Appearance —
+            section {
+                Text("appearance:").foregroundStyle(.secondary)
                 HStack {
                     Text("weather").foregroundStyle(.secondary)
                     Picker("", selection: $weather) {
@@ -104,12 +133,12 @@ struct SettingsView: View {
                     InfoTipButton("Shows the umbrella ☂ icon next to the countdown in the menu bar.")
                 }
                 HStack(spacing: 4) {
-                    Toggle("short time labels", isOn: $shortTimeFormat)
-                    InfoTipButton("Off: shows '25:00' and '1:30:00'.\nOn: shows '25m' and '1hr 30m', updating by the minute.")
-                }
-                HStack(spacing: 4) {
                     Toggle("liquid glass", isOn: $liquidGlass)
                     InfoTipButton("Frosted glass background on the floating display.")
+                }
+                HStack(spacing: 4) {
+                    Toggle("flash timer", isOn: $flashOnInterval)
+                    InfoTipButton("Briefly flashes the timer at the 1-minute mark and at every 5-minute interval (5:00, 10:00, 15:00…).")
                 }
             }
 

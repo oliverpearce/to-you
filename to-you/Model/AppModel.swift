@@ -103,6 +103,31 @@ final class AppModel: ObservableObject {
         formatted(secondsLeft)
     }
 
+    func shortFormatted(_ seconds: Int) -> String {
+        if seconds >= 3600 {
+            let hrs = seconds / 3600
+            let mins = (seconds % 3600) / 60
+            return mins > 0 ? "\(hrs)hr \(mins)m" : "\(hrs)hr"
+        }
+        return "\(seconds / 60)m"
+    }
+
+    func formattedNoSeconds(_ seconds: Int) -> String {
+        let h = seconds / 3600
+        let m = (seconds % 3600) / 60
+        if h > 0 { return String(format: "%d:%02d", h, m) }
+        return "\(m)"
+    }
+
+    func shortFormattedWithSeconds(_ seconds: Int) -> String {
+        let h = seconds / 3600
+        let m = (seconds % 3600) / 60
+        let s = seconds % 60
+        if h > 0 { return m > 0 ? "\(h)hr \(m)m \(s)s" : "\(h)hr \(s)s" }
+        if m > 0 { return "\(m)m \(s)s" }
+        return "\(s)s"
+    }
+
     var progress: Double {
         guard totalSeconds > 0 else { return 0.0 }
         return 1.0 - Double(secondsLeft) / Double(totalSeconds)

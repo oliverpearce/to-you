@@ -64,12 +64,20 @@ private struct BannerView: View {
     let message: String
     let onDismiss: () -> Void
 
+    @AppStorage("goldNotification") private var goldNotification: Bool = false
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "sun.max.fill")
                 .font(.system(size: 22))
-                .foregroundStyle(.yellow)
-                .shadow(color: .yellow.opacity(0.6), radius: 6)
+                .foregroundStyle(goldNotification
+                    ? Color(red: 1.0, green: 0.97, blue: 0.55)
+                    : .yellow)
+                .shadow(color: goldNotification
+                    ? .white.opacity(0.9)
+                    : .yellow.opacity(0.6),
+                    radius: goldNotification ? 10 : 6)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -88,7 +96,10 @@ private struct BannerView: View {
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(.tertiary)
                     .padding(5)
-                    .background(.white.opacity(0.08), in: Circle())
+                    .background(goldNotification
+                        ? .black.opacity(0.12)
+                        : .white.opacity(0.08),
+                        in: Circle())
             }
             .buttonStyle(.plain)
         }
@@ -96,19 +107,48 @@ private struct BannerView: View {
         .padding(.vertical, 12)
         .frame(width: 320, height: 80)
         .background {
-            RoundedRectangle(cornerRadius: 18)
-                .fill(.ultraThinMaterial)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 18)
-                        .strokeBorder(
-                            LinearGradient(
-                                colors: [.white.opacity(0.3), .white.opacity(0.08)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing),
-                            lineWidth: 0.5)
-                }
+            if goldNotification {
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(LinearGradient(
+                        stops: [
+                            .init(color: Color(red: 1.00, green: 0.90, blue: 0.30), location: 0.00),
+                            .init(color: Color(red: 0.86, green: 0.65, blue: 0.08), location: 0.28),
+                            .init(color: Color(red: 1.00, green: 0.97, blue: 0.58), location: 0.50),
+                            .init(color: Color(red: 0.80, green: 0.58, blue: 0.05), location: 0.72),
+                            .init(color: Color(red: 0.94, green: 0.74, blue: 0.18), location: 1.00),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 18)
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [
+                                        Color(red: 1.00, green: 0.98, blue: 0.78),
+                                        Color(red: 0.62, green: 0.42, blue: 0.00),
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing),
+                                lineWidth: 1.0)
+                    }
+                    .shadow(color: Color(red: 0.85, green: 0.58, blue: 0.0).opacity(0.55), radius: 14, x: 0, y: 5)
+            } else {
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(.ultraThinMaterial)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 18)
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [.white.opacity(0.3), .white.opacity(0.08)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing),
+                                lineWidth: 0.5)
+                    }
+            }
         }
-        .shadow(color: .black.opacity(0.18), radius: 14, x: 0, y: 6)
+        .environment(\.colorScheme, goldNotification ? .light : colorScheme)
+        .shadow(color: .black.opacity(goldNotification ? 0.10 : 0.18), radius: 14, x: 0, y: 6)
         .onTapGesture { onDismiss() }
     }
 }

@@ -5,10 +5,7 @@
 import Cocoa
 import SwiftUI
 import Combine
-import CoreText
-import UserNotifications
-
-final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let popover = NSPopover()
     let model = AppModel()
@@ -16,14 +13,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private let settings = SettingsWindowController()
     private var bag = Set<AnyCancellable>()
     private var alarmSound: NSSound?
-    private var muteWorkItem: DispatchWorkItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        registerBundledFonts()
-
-        UNUserNotificationCenter.current().delegate = self
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
-
         // Menubar status item
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
@@ -52,6 +43,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             forName: .testAlarm, object: nil, queue: .main
         ) { [weak self] _ in self?.notifyAndReveal() }
 
+        NotificationCenter.default.addObserver(
+            forName: .showHUD, object: nil, queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            if self.model.hudVisible {
+                self.hud.hide()
+            } else {
+                self.hud.show(model: self.model, onClose: { [weak self] in self?.hud.hide() }, openSettings: { [weak self] in
+                    guard let self else { return }
+                    if self.model.isRunning { self.model.pause() }
+                    self.settings.show()
+                })
+            }
+        }
+
         // Popover content
         let content = TimerPopoverView(
             model: model,
@@ -69,15 +75,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 if self.model.hudVisible {
                     self.hud.hide()
                 } else {
-                    self.hud.show(model: self.model, onClose: { [weak self] in self?.hud.hide() })
+                    self.hud.show(model: self.model, onClose: { [weak self] in self?.hud.hide() }, openSettings: { [weak self] in
+                        guard let self else { return }
+                        if self.model.isRunning { self.model.pause() }
+                        self.settings.show()
+                    })
                 }
             }
         )
         popover.behavior = .transient
-        popover.contentSize = NSSize(width: 310, height: 148)
+        popover.contentSize = NSSize(width: 320, height: 148)
         popover.contentViewController = NSViewController()
-        popover.contentViewController?.view = NSHostingView(rootView: content)
-
+        popover.contentViewController?.view = FirstMouseHostingView(rootView: content)
     }
 
     @objc private func togglePopover(_ sender: Any?) {
@@ -91,6 +100,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
     private func updateStatusButton(secondsLeft: Int, isPaused: Bool) {
         guard let button = statusItem.button else { return }
+        statusItem.isVisible = true
         let expanded = UserDefaults.standard.string(forKey: "menuBarStyle") == "expanded"
         button.font = .monospacedDigitSystemFont(ofSize: 13, weight: .medium)
         button.title = model.formatted(secondsLeft) + (isPaused ? " ⏸" : "")
@@ -106,11 +116,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
     private func resetStatusButton() {
         guard let button = statusItem.button else { return }
-        button.title = ""
-        button.image = NSImage(systemSymbolName: "umbrella", accessibilityDescription: "umbrella")
-        button.image?.isTemplate = true
-        button.imagePosition = .imageOnly
+        statusItem.isVisible = true
         button.font = nil
+        button.title = ""
+        if let img = NSImage(systemSymbolName: "umbrella", accessibilityDescription: "umbrella") {
+            img.isTemplate = true
+            button.image = img
+            button.imagePosition = .imageOnly
+        } else {
+            // Fallback: use a text character so the item is never invisible
+            button.image = nil
+            button.title = "☂"
+            button.imagePosition = .noImage
+        }
     }
 
     private func notifyAndReveal() {
@@ -122,54 +140,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         let title = "The \(weatherName) has cleared."
         let body = BreakMessages.random()
 
-        // Always-visible custom banner — no permission required
         FinishedBanner.show(title: title, body: body)
-
-        // Also fire a system notification if the user has enabled them
-        let enabled = UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true
-        guard enabled else { return }
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body  = body
-        content.sound = nil
-        UNUserNotificationCenter.current().add(
-            UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil),
-            withCompletionHandler: nil)
     }
 
     private func playAlarm() {
         alarmSound?.stop()
-        muteWorkItem?.cancel()
-
+        guard !UserDefaults.standard.bool(forKey: "forceMuteAlarm") else { return }
         let volume = Float(UserDefaults.standard.object(forKey: "alarmVolume") as? Double ?? 0.5)
         guard volume > 0, let sound = NSSound(named: NSSound.Name("Glass")) else { return }
         sound.volume = volume
         sound.play()
         alarmSound = sound
-
-        let autoMute = UserDefaults.standard.object(forKey: "autoMuteAlarm") as? Bool ?? false
-        if autoMute {
-            let raw  = UserDefaults.standard.integer(forKey: "autoMuteDuration")
-            let secs = Double(min(60, max(1, raw == 0 ? 5 : raw)))
-            let item = DispatchWorkItem { [weak self] in self?.alarmSound?.stop() }
-            muteWorkItem = item
-            DispatchQueue.main.asyncAfter(deadline: .now() + secs, execute: item)
-        }
-    }
-
-    // Show banner even while app is active (menubar apps are always "active")
-    func userNotificationCenter(_ center: UNUserNotificationCenter,
-                                willPresent notification: UNNotification,
-                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        completionHandler([.banner, .list])
-    }
-
-    private func registerBundledFonts() {
-        let names = ["PressStart2P-Regular.ttf", "VT323-Regular.ttf"]
-        for name in names {
-            if let url = Bundle.main.url(forResource: name, withExtension: nil, subdirectory: "Fonts") {
-                CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
-            }
-        }
     }
 }

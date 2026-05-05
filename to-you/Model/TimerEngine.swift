@@ -48,7 +48,6 @@ final class TimerEngine {
         timer = nil
         endDate = nil
         remainingSeconds = nil
-        subject.send(0)
     }
 
     private func scheduleTimer(withRemaining seconds: Int) {

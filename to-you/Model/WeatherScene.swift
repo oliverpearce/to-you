@@ -27,7 +27,7 @@ struct WeatherScene {
         "  *    *   \\    |    /   *    * ",
         "    *    \\  \\   |   /  /    *   ",
         "  *    \\  \\  \\  |  /  /  /   *  ",
-        " * * *  ( take a break! :) ) * *",
+        " * * *  ( take a break! c: ) * *",
         "  *    /  /  /  |  \\  \\  \\   *  ",
         "    *    /  /   |   \\  \\    *   ",
         "  *    *   /    |    \\   *    * ",
@@ -48,7 +48,6 @@ struct WeatherScene {
         guard weather != .none else {
             return Array(repeating: padded("", to: width), count: height).joined(separator: "\n")
         }
-        // Clouds scroll at 1 char/sec — same direction as rain/snow body
         let cloudLen = cloudArt[0].count
         let cloudScroll = tick % max(1, cloudLen)
         let clouds = showClouds ? cloudArt.map { tiledScrolled($0, to: width, offset: cloudScroll) } : []
@@ -73,96 +72,84 @@ struct WeatherScene {
 
     // MARK: - Rain
     //
-    // Field approach: show '/' at (r,c) when uMod = (r − tick + phase) mod period < dropLen.
-    // u = r − tick is FIXED for a char moving (+1 row, −1 col) per tick, so any visible
-    // '/' is guaranteed at (r+1, c−1) the next tick — zero mid-screen despawning.
-    // period = height + dropLen ensures each drop lives long enough to cross the screen.
+    // Each row was generated at tick (t − row) and has fallen straight down since.
+    // Row 0 is always fresh (genTick == tick). Row r shows what row 0 looked like
+    // r ticks ago. Nothing moves horizontally — drops fall vertically.
+    // Characters: | for body drops, ' for lighter ones.
+
+    private static let rainChars: [Character] = ["|", ",", "|", "'", "!"]
 
     private static func rainRows(width: Int, height: Int, tick: Int) -> [String] {
         guard height > 0, width > 0 else { return [] }
         var grid = Array(repeating: Array(repeating: Character(" "), count: width), count: height)
-
-        let numDiags = width + height - 1
-        for d in 0..<numDiags {
-            var rng = SeededRandom(seed: colSeed(d, salt: 77))
-            guard rng.nextDouble() < 0.88 else { continue }
-
-            let dropLen = 1 + Int(rng.nextDouble() * 2)   // 1–2 chars
-            let period  = height + dropLen                 // guarantees full-screen traversal
-            let phase   = Int(rng.nextDouble() * Double(period))
-
-            let rMin = max(0, d - (width - 1))
-            let rMax = min(height - 1, d)
-            for r in rMin...rMax {
-                let uMod = ((r - tick + phase) % period + period) % period
-                if uMod < dropLen {
-                    grid[r][d - r] = "/"
-                }
+        let density = 0.25
+        for row in 0..<height {
+            let genTick = tick - row
+            for col in 0..<width {
+                let r = noise(genTick, col)
+                guard r < density else { continue }
+                grid[row][col] = rainChars[Int(r / density * Double(rainChars.count))]
             }
         }
         return grid.map { String($0) }
     }
 
-    // MARK: - Snow (flakes fall & drift, whole scene scrolls left 1 col/sec)
+    // MARK: - Snow
 
     private static let snowChars: [Character] = ["*", ".", "'", "+", "*", "·"]
 
     private static func snowRows(width: Int, height: Int, tick: Int) -> [String] {
         guard height > 0, width > 0 else { return [] }
         var grid = Array(repeating: Array(repeating: Character(" "), count: width), count: height)
-        let snowTick = tick / 2       // flakes fall at half speed
-        let scroll   = tick % width   // whole scene scrolls left 1 col/sec
-
-        for col in 0..<width {
-            var rng = SeededRandom(seed: colSeed(col, salt: 999))
-            guard rng.nextDouble() < 0.65 else { continue }
-
-            let period   = 3 + Int(rng.nextDouble() * 4)
-            let phase    = Int(rng.nextDouble() * Double(period))
-            let ch       = snowChars[Int(rng.nextDouble() * Double(snowChars.count))]
-            let driftAmt = Int(rng.nextDouble() * 3) - 1   // −1, 0, or +1
-
-            for row in 0..<height {
-                let adj = ((row - snowTick + phase) % period + period) % period
-                guard adj == 0 else { continue }
-                let drift    = (tick / 3) % 2 == 0 ? driftAmt : 0
-                let rawCol   = col + drift - scroll
-                let dc       = ((rawCol % width) + width) % width
-                grid[row][dc] = ch
+        let density = 0.15
+        for row in 0..<height {
+            let genTick = tick - row
+            for col in 0..<width {
+                let r = noise(genTick, col)
+                guard r < density else { continue }
+                grid[row][col] = snowChars[Int(r / density * Double(snowChars.count))]
             }
         }
         return grid.map { String($0) }
     }
 
-    // MARK: - Fog (horizontal drifting wisps — each row at its own speed)
+    // MARK: - Fog (horizontal drift)
+    //
+    // Each row gets its own noise-seeded character pattern (generated once from
+    // the row index), then tiledScrolled shifts it right by one column every 2
+    // ticks — same helper the cloud banner uses, so scrolling is guaranteed visible.
 
-    private static let fogChars: [Character] = ["~", "~", "-", "·", "~", " ", " "]
+    private static let fogChars: [Character] = ["~", "~", "-", " ", " "]
 
     private static func fogRows(width: Int, height: Int, tick: Int) -> [String] {
         guard height > 0, width > 0 else { return [] }
-        var lines: [String] = []
-        for row in 0..<height {
-            let rowSpeed = 1 + (row % 3)
-            let shift    = (tick * rowSpeed) % width
-            var line     = Array(repeating: Character(" "), count: width)
-            var rowRng   = SeededRandom(seed: UInt64(bitPattern: Int64(row &* 31337 &+ 7)))
-            let density  = 0.3 + rowRng.nextDouble() * 0.5
-            for col in 0..<width {
-                let srcCol = (col + shift) % width
-                var rng = SeededRandom(seed: colSeed(srcCol, salt: UInt64(row &* 13)))
-                if rng.nextDouble() < density {
-                    line[col] = fogChars[Int(rng.nextDouble() * Double(fogChars.count))]
-                }
+        let patternLen = width + 16
+        let drift = tick / 2
+        return (0..<height).map { row in
+            var pattern = ""
+            pattern.reserveCapacity(patternLen)
+            for i in 0..<patternLen {
+                let r = noise(i, row)
+                pattern.append(r < 0.50
+                    ? fogChars[Int(r / 0.50 * Double(fogChars.count))]
+                    : " ")
             }
-            lines.append(String(line))
+            return tiledScrolled(pattern, to: width, offset: -drift)
         }
-        return lines
     }
 
     // MARK: - Helpers
 
-    private static func colSeed(_ col: Int, salt: UInt64) -> UInt64 {
-        UInt64(bitPattern: Int64(col &* 2654435761 &+ 1013904223)) &+ salt
+    // Returns a stable value in [0, 1) for a given (tick, position) pair.
+    // Same inputs always give the same output — this keeps the animation stable.
+    // Swift has no built-in seedable random, so a small hash function is unavoidable here.
+    private static func noise(_ tick: Int, _ pos: Int) -> Double {
+        var z = UInt64(bitPattern: Int64(tick)) &* 0x9e3779b97f4a7c15
+                ^ UInt64(pos) &* 0x6c62272e07bb0142
+        z = (z ^ (z >> 30)) &* 0xbf58476d1ce4e5b9
+        z = (z ^ (z >> 27)) &* 0x94d049bb133111eb
+        z ^= z >> 31
+        return Double(z >> 11) / Double(1 << 53)
     }
 
     private static func padded(_ s: String, to width: Int) -> String {
@@ -191,14 +178,4 @@ struct WeatherScene {
         }
         return buf
     }
-}
-
-private struct SeededRandom {
-    private var state: UInt64
-    init(seed: UInt64) { state = seed == 0 ? 1 : seed }
-    mutating func next() -> UInt64 {
-        var x = state; x ^= x >> 12; x ^= x << 25; x ^= x >> 27; state = x
-        return x &* 2685821657736338717
-    }
-    mutating func nextDouble() -> Double { Double(next() >> 11) / Double(1 << 53) }
 }

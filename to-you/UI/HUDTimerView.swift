@@ -7,11 +7,13 @@ import SwiftUI
 struct HUDTimerView: View {
     @ObservedObject var model: AppModel
     let onClose: () -> Void
+    let openSettings: () -> Void
 
-    @AppStorage("selectedFont")    private var fontTheme: FontTheme = .system
-    @AppStorage("selectedWeather") private var weather: WeatherType = .rain
+    @AppStorage("selectedFont")     private var fontTheme: FontTheme = .system
+    @AppStorage("selectedWeather")  private var weather: WeatherType = .rain
+    @AppStorage("timeFormat")       private var timeFormat: TimeFormat = .clock
+    @AppStorage("showSeconds")      private var showSeconds: Bool = true
     @State private var isHovering = false
-    @State private var frozenTick: Int? = Int(Date().timeIntervalSinceReferenceDate)
 
     var body: some View {
         GeometryReader { geo in
@@ -29,31 +31,59 @@ struct HUDTimerView: View {
 
                 // LAYER 0: Weather scene
                 if showScene {
-                    TimelineView(.periodic(from: .now, by: 1.0)) { context in
-                        let rawTick = Int(context.date.timeIntervalSinceReferenceDate)
-                        let tick = frozenTick ?? rawTick
-                        Text(WeatherScene.frame(width: cols, height: rows, tick: tick,
-                                               weather: weather, finished: model.isFinished,
-                                               showClouds: showClouds))
+                    let tick = model.totalSeconds - model.secondsLeft
+                    let art = WeatherScene.frame(width: cols, height: rows, tick: tick,
+                                                weather: weather, finished: model.isFinished,
+                                                showClouds: showClouds)
+                    if model.isFinished {
+                        TimelineView(.animation) { tl in
+                            let t = tl.date.timeIntervalSinceReferenceDate / 3.0
+                            let hue = t.truncatingRemainder(dividingBy: 1.0)
+                            Text(art)
+                                .font(.system(size: 9, design: .monospaced))
+                                .lineSpacing(0)
+                                .foregroundStyle(LinearGradient(colors: [
+                                    Color(hue: hue,                                          saturation: 0.85, brightness: 1.0),
+                                    Color(hue: (hue + 0.25).truncatingRemainder(dividingBy: 1), saturation: 0.85, brightness: 1.0),
+                                    Color(hue: (hue + 0.50).truncatingRemainder(dividingBy: 1), saturation: 0.85, brightness: 1.0),
+                                    Color(hue: (hue + 0.75).truncatingRemainder(dividingBy: 1), saturation: 0.85, brightness: 1.0),
+                                ], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                                .allowsHitTesting(false)
+                        }
+                    } else {
+                        Text(art)
                             .font(.system(size: 9, design: .monospaced))
                             .lineSpacing(0)
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                            .allowsHitTesting(false)
                     }
-                    .allowsHitTesting(false)
                 }
 
                 // LAYER 1: Timer — always visible
-                Text(model.formattedTimeLeft)
+                let hudLabel: String = {
+                    switch (timeFormat, showSeconds) {
+                    case (.clock, true):  return model.formattedTimeLeft
+                    case (.clock, false): return model.formattedNoSeconds(model.secondsLeft)
+                    case (.wordy, true):  return model.shortFormattedWithSeconds(model.secondsLeft)
+                    case (.wordy, false): return model.shortFormatted(model.secondsLeft)
+                    }
+                }()
+                Text(hudLabel)
                     .font(fontTheme.timerFont(size: timerSize))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                     .shadow(color: .black.opacity(isMinimal ? 0 : 0.4), radius: 3, x: 0, y: 1)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .allowsHitTesting(false)
 
-                // LAYER 2: Hover controls (no dark overlay)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay {
+                // Hover controls in an overlay so they never affect the timer text layout
                 if isHovering {
                     ZStack {
-                        // Corner buttons
                         VStack {
                             HStack {
                                 circleButton(icon: "xmark") { onClose() }
@@ -61,10 +91,13 @@ struct HUDTimerView: View {
                                 circleButton(icon: "arrow.counterclockwise") { model.start(seconds: model.totalSeconds) }
                             }
                             Spacer()
+                            HStack {
+                                circleButton(icon: "gearshape") { openSettings() }
+                                Spacer()
+                            }
                         }
                         .padding(6)
 
-                        // Centre: play / pause / resume (hidden when finished)
                         if !model.isFinished {
                             let icon = model.isPaused ? "play.fill" : (model.isRunning ? "pause.fill" : "play.fill")
                             let sz: CGFloat = isMinimal ? 22 : 34
@@ -85,21 +118,12 @@ struct HUDTimerView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .liquidGlassBackground()
         .contentShape(RoundedRectangle(cornerRadius: 14))
         .onHover { isHovering = $0 }
-        .onChange(of: model.isRunning) { _, running in
-            if running {
-                frozenTick = nil
-            } else {
-                frozenTick = Int(Date().timeIntervalSinceReferenceDate)
-            }
-        }
     }
 
     private func circleButton(icon: String, action: @escaping () -> Void) -> some View {

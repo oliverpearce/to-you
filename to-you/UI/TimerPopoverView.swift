@@ -15,11 +15,14 @@ struct TimerPopoverView: View {
     @AppStorage("preset2") private var preset2: Int = 30
     @AppStorage("preset3") private var preset3: Int = 45
     @AppStorage("selectedFont")       private var fontTheme: FontTheme = .system
-    @AppStorage("shortTimeFormat")    private var shortTimeFormat: Bool = false
+    @AppStorage("timeFormat")          private var timeFormat: TimeFormat = .clock
+    @AppStorage("showSeconds")        private var showSeconds: Bool = true
+    @AppStorage("flashOnInterval")    private var flashOnInterval: Bool = true
 
     @State private var sliderMinutes: Double = 25
     @State private var dragStartMinutes: Double? = nil
     @State private var isEditingTime = false
+    @State private var flashOpacity: Double = 1.0
     @State private var editString = ""
     @FocusState private var timeFieldFocused: Bool
 
@@ -34,7 +37,23 @@ struct TimerPopoverView: View {
                 presetButton(preset2)
                 presetButton(preset3)
                 Spacer()
-                dotsMenu
+                HStack(spacing: 4) {
+                    Button { toggleHUD() } label: {
+                        Image(systemName: "macwindow")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .hoverHighlight()
+                    Button { openSettings() } label: {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .hoverHighlight()
+                    dotsMenu
+                }
             }
             .padding(.horizontal, 14)
             .padding(.top, 10)
@@ -58,6 +77,8 @@ struct TimerPopoverView: View {
             .padding(.bottom, 14)
             .overlay(alignment: .bottomTrailing) {
                 timeDisplay
+                    .opacity(flashOpacity)
+                    .animation(.easeInOut(duration: 0.15), value: flashOpacity)
                     .padding(.trailing, 14)
                     .padding(.bottom, 14)
             }
@@ -68,6 +89,14 @@ struct TimerPopoverView: View {
         .onChange(of: model.totalSeconds) { _, _ in
             guard !model.isRunning && !model.isPaused else { return }
             syncSlider()
+        }
+        .onChange(of: model.secondsLeft) { _, secs in
+            guard model.isRunning, flashOnInterval else { return }
+            guard secs > 0, secs % 60 == 0 else { return }
+            flashOpacity = 0.1
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { flashOpacity = 1.0 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.50) { flashOpacity = 0.1 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) { flashOpacity = 1.0 }
         }
     }
 
@@ -86,7 +115,14 @@ struct TimerPopoverView: View {
                 .onSubmit { commitTimeEdit() }
                 .onExitCommand { isEditingTime = false }
         } else if model.isRunning || model.isPaused {
-            let label = shortTimeFormat ? shortLabel(model.secondsLeft) : model.formattedTimeLeft
+            let label: String = {
+                switch (timeFormat, showSeconds) {
+                case (.clock, true):  return model.formattedTimeLeft
+                case (.clock, false): return model.formattedNoSeconds(model.secondsLeft)
+                case (.wordy, true):  return model.shortFormattedWithSeconds(model.secondsLeft)
+                case (.wordy, false): return model.shortFormatted(model.secondsLeft)
+                }
+            }()
             Text(label)
                 .font(timeFont(for: label))
                 .monospacedDigit()
@@ -104,19 +140,13 @@ struct TimerPopoverView: View {
     }
 
     private var idleTimeLabel: String {
-        if shortTimeFormat {
-            return model.isFinished ? shortLabel(model.secondsLeft) : shortLabel(model.totalSeconds)
+        let secs = model.isFinished ? model.secondsLeft : model.totalSeconds
+        switch (timeFormat, showSeconds) {
+        case (.clock, true):  return model.formatted(secs)
+        case (.clock, false): return model.formattedNoSeconds(secs)
+        case (.wordy, true):  return model.shortFormattedWithSeconds(secs)
+        case (.wordy, false): return model.shortFormatted(secs)
         }
-        return model.formattedTimeLeft
-    }
-
-    private func shortLabel(_ seconds: Int) -> String {
-        if seconds >= 3600 {
-            let hrs = seconds / 3600
-            let mins = (seconds % 3600) / 60
-            return mins > 0 ? "\(hrs)hr \(mins)m" : "\(hrs)hr"
-        }
-        return "\(seconds / 60)m"
     }
 
     private func beginTimeEdit() {
@@ -129,7 +159,7 @@ struct TimerPopoverView: View {
         isEditingTime = false
         timeFieldFocused = false
         guard let mins = Int(editString.trimmingCharacters(in: .whitespaces)), mins > 0 else { return }
-        let capped = min(180, mins)
+        let capped = min(600, mins)
         sliderMinutes = Double(capped)
         model.setDuration(seconds: capped * 60)
     }
@@ -146,7 +176,7 @@ struct TimerPopoverView: View {
                 guard !model.isRunning && !model.isPaused else { return }
                 if dragStartMinutes == nil { dragStartMinutes = sliderMinutes }
                 let delta = -(val.translation.height) / 4.0
-                let newMins = ((dragStartMinutes ?? sliderMinutes) + delta).rounded().clamped(to: 1...180)
+                let newMins = ((dragStartMinutes ?? sliderMinutes) + delta).rounded().clamped(to: 1...600)
                 if newMins != sliderMinutes {
                     sliderMinutes = newMins
                     model.setDuration(seconds: Int(newMins) * 60)
@@ -162,9 +192,9 @@ struct TimerPopoverView: View {
         if model.isRunning || model.isPaused {
             ScrubberView(fraction: model.progress, interactive: false, onFraction: nil)
         } else {
-            let fraction = (sliderMinutes - 1) / 179
+            let fraction = (sliderMinutes - 1) / 599
             ScrubberView(fraction: fraction, interactive: true) { f in
-                sliderMinutes = (1 + f * 179).rounded()
+                sliderMinutes = (1 + f * 599).rounded()
                 model.setDuration(seconds: Int(sliderMinutes) * 60)
             }
         }
@@ -188,8 +218,14 @@ struct TimerPopoverView: View {
 
     // MARK: - Preset buttons
 
+    private func presetLabel(_ minutes: Int) -> String {
+        guard minutes >= 60 else { return "\(minutes)m" }
+        let h = minutes / 60, m = minutes % 60
+        return m == 0 ? "\(h)hr" : "\(h)h\(m)m"
+    }
+
     private func presetButton(_ minutes: Int) -> some View {
-        Button("\(minutes)m") {
+        Button(presetLabel(minutes)) {
             guard !model.isRunning && !model.isPaused else { return }
             sliderMinutes = Double(minutes)
             model.setDuration(seconds: minutes * 60)
@@ -229,7 +265,7 @@ struct TimerPopoverView: View {
     // MARK: - Helpers
 
     private func syncSlider() {
-        sliderMinutes = min(180, Double(model.totalSeconds / 60))
+        sliderMinutes = min(600, Double(model.totalSeconds / 60))
     }
 }
 

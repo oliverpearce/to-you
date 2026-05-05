@@ -8,6 +8,11 @@ import SwiftUI
 extension Notification.Name {
     static let hudSettingsDidChange = Notification.Name("to-you.hudSettingsDidChange")
     static let testAlarm            = Notification.Name("to-you.testAlarm")
+    static let showHUD              = Notification.Name("to-you.showHUD")
+}
+
+final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
 
 final class FloatingHUD {
@@ -15,12 +20,12 @@ final class FloatingHUD {
     private weak var model: AppModel?
     private var observer: NSObjectProtocol?
 
-    func show(model: AppModel, onClose: @escaping () -> Void) {
+    func show(model: AppModel, onClose: @escaping () -> Void, openSettings: @escaping () -> Void) {
         self.model = model
         model.hudVisible = true
 
         if window == nil {
-            createWindow(model: model, onClose: onClose)
+            createWindow(model: model, onClose: onClose, openSettings: openSettings)
         }
         window?.orderFrontRegardless()
 
@@ -44,7 +49,7 @@ final class FloatingHUD {
         return HUDSize(rawValue: key) ?? .compact
     }
 
-    private func createWindow(model: AppModel, onClose: @escaping () -> Void) {
+    private func createWindow(model: AppModel, onClose: @escaping () -> Void, openSettings: @escaping () -> Void) {
         let size = currentSize()
         let pw = size.panelSize.width
         let ph = size.panelSize.height
@@ -60,7 +65,7 @@ final class FloatingHUD {
         panel.isOpaque = false
         panel.hidesOnDeactivate = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        panel.contentView = NSHostingView(rootView: HUDTimerView(model: model, onClose: onClose))
+        panel.contentView = FirstMouseHostingView(rootView: HUDTimerView(model: model, onClose: onClose, openSettings: openSettings))
 
         if let screen = NSScreen.main {
             let vf = screen.visibleFrame
