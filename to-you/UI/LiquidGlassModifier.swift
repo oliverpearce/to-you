@@ -24,3 +24,7 @@ extension View {
         modifier(LiquidGlassModifier())
     }
 }
+
+extension Color {
+    static let lavender = Color(hue: 0.75, saturation: 0.45, brightness: 1.0)
+}

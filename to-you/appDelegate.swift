@@ -18,24 +18,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Menubar status item
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "umbrella", accessibilityDescription: "umbrella")
+            button.image = NSImage(systemSymbolName: "umbrella", accessibilityDescription: "to-you timer")
             button.image?.isTemplate = true
             button.action = #selector(togglePopover(_:))
             button.target = self
         }
 
-        // Reactive menubar updates — all three together so we never read isRunning mid-flight
-        Publishers.CombineLatest3(model.$secondsLeft, model.$isPaused, model.$isRunning)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] secondsLeft, isPaused, isRunning in
-                guard let self else { return }
-                if isRunning || isPaused {
-                    self.updateStatusButton(secondsLeft: secondsLeft, isPaused: isPaused)
-                } else {
-                    self.resetStatusButton()
-                }
+        // Reactive menubar updates — observe all four together to avoid mid-flight gaps
+        Publishers.CombineLatest(
+            Publishers.CombineLatest3(model.$secondsLeft, model.$isPaused, model.$isRunning),
+            model.$isBreakTimer
+        )
+        .map { inner, isBreakTimer in (inner.0, inner.1, inner.2, isBreakTimer) }
+        .receive(on: DispatchQueue.main)
+        .sink { [weak self] secondsLeft, isPaused, isRunning, isBreakTimer in
+            guard let self else { return }
+            if isRunning || isPaused || isBreakTimer {
+                self.updateStatusButton(secondsLeft: secondsLeft, isPaused: isPaused)
+            } else {
+                self.resetStatusButton()
             }
-            .store(in: &bag)
+        }
+        .store(in: &bag)
 
         model.onFinish = { [weak self] in self?.notifyAndReveal() }
 
@@ -84,7 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         )
         popover.behavior = .transient
-        popover.contentSize = NSSize(width: 320, height: 148)
+        popover.contentSize = NSSize(width: 320, height: 168)
         popover.contentViewController = NSViewController()
         popover.contentViewController?.view = FirstMouseHostingView(rootView: content)
     }
@@ -105,7 +109,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         button.font = .monospacedDigitSystemFont(ofSize: 13, weight: .medium)
         button.title = model.formatted(secondsLeft) + (isPaused ? " ⏸" : "")
         if expanded {
-            button.image = NSImage(systemSymbolName: "umbrella.fill", accessibilityDescription: nil)
+            button.image = NSImage(systemSymbolName: "umbrella.fill", accessibilityDescription: "to-you timer")
             button.image?.isTemplate = true
             button.imagePosition = .imageLeft
         } else {
@@ -121,10 +125,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         button.title = ""
         if let img = NSImage(systemSymbolName: "umbrella", accessibilityDescription: "umbrella") {
             img.isTemplate = true
+            img.accessibilityDescription = "to-you timer"
             button.image = img
             button.imagePosition = .imageOnly
         } else {
-            // Fallback: use a text character so the item is never invisible
             button.image = nil
             button.title = "☂"
             button.imagePosition = .noImage
@@ -140,6 +144,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let title = "The \(weatherName) has cleared."
         let body = BreakMessages.random()
 
+        guard UserDefaults.standard.bool(forKey: "notificationsEnabled") else { return }
         FinishedBanner.show(title: title, body: body)
     }
 

@@ -102,6 +102,7 @@ private struct BannerView: View {
                         in: Circle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Dismiss")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)

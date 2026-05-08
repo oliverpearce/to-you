@@ -72,9 +72,11 @@ struct HUDTimerView: View {
                 }()
                 Text(hudLabel)
                     .font(fontTheme.timerFont(size: timerSize))
+                    .fontWeight(model.isBreakTimer ? .bold : nil)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
                     .shadow(color: .black.opacity(isMinimal ? 0 : 0.4), radius: 3, x: 0, y: 1)
+                    .foregroundStyle(model.isBreakTimer ? Color.lavender : Color.primary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .allowsHitTesting(false)
 
@@ -86,13 +88,13 @@ struct HUDTimerView: View {
                     ZStack {
                         VStack {
                             HStack {
-                                circleButton(icon: "xmark") { onClose() }
+                                circleButton(icon: "xmark", label: "Close") { onClose() }
                                 Spacer()
-                                circleButton(icon: "arrow.counterclockwise") { model.start(seconds: model.totalSeconds) }
+                                circleButton(icon: "arrow.counterclockwise", label: "Restart") { model.start(seconds: model.totalSeconds) }
                             }
                             Spacer()
                             HStack {
-                                circleButton(icon: "gearshape") { openSettings() }
+                                circleButton(icon: "gearshape", label: "Settings") { openSettings() }
                                 Spacer()
                             }
                         }
@@ -115,7 +117,7 @@ struct HUDTimerView: View {
                                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: r))
                             }
                             .buttonStyle(.plain)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .accessibilityLabel(model.isPaused ? "Resume" : (model.isRunning ? "Pause" : "Start"))
                         }
                     }
                 }
@@ -126,7 +128,7 @@ struct HUDTimerView: View {
         .onHover { isHovering = $0 }
     }
 
-    private func circleButton(icon: String, action: @escaping () -> Void) -> some View {
+    private func circleButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 10, weight: .semibold))
@@ -135,5 +137,6 @@ struct HUDTimerView: View {
                 .background(.regularMaterial, in: Circle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(label)
     }
 }
