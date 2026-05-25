@@ -1,3 +1,4 @@
+
 //
 //  WeatherScene.swift
 //  to-you.
@@ -12,13 +13,7 @@ enum WeatherType: String, CaseIterable, Identifiable {
 }
 
 struct WeatherScene {
-    // Three-cloud banner — tiles seamlessly and scrolls horizontally
-    private static let cloudArt: [String] = [
-        "  .---.   .---------.   .----.  ",
-        " (     ) (           ) (      ) ",
-        "  `---'   `---------'   `----'  "
-    ]
-
+    
     // Sunshine scene shown when timer finishes
     private static let sunshineArt: [String] = [
         "  *      *    *      *    *     ",
@@ -47,17 +42,17 @@ struct WeatherScene {
         guard weather != .none else {
             return Array(repeating: padded("", to: width), count: height).joined(separator: "\n")
         }
-        let cloudLen = cloudArt[0].count
-        let cloudScroll = tick % max(1, cloudLen)
-        let clouds = showClouds ? cloudArt.map { tiledScrolled($0, to: width, offset: cloudScroll) } : []
-        let bodyHeight = max(0, height - clouds.count)
+//        let cloudLen = cloudArt[0].count
+//        let cloudScroll = tick % max(1, cloudLen)
+//        let clouds = showClouds ? cloudArt.map { tiledScrolled($0, to: width, offset: cloudScroll) } : []
+        let bodyHeight = max(0, height)
         let body: [String]
         switch weather {
         case .rain: body = rainRows(width: width, height: bodyHeight, tick: tick)
         case .snow: body = snowRows(width: width, height: bodyHeight, tick: tick)
         case .none: body = Array(repeating: padded("", to: width), count: bodyHeight)
         }
-        return (clouds + body).joined(separator: "\n")
+        return (body).joined(separator: "\n")
     }
 
     // MARK: - Sunshine

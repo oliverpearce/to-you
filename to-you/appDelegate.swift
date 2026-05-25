@@ -15,7 +15,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var alarmSound: NSSound?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Menubar status item
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.image = NSImage(systemSymbolName: "umbrella", accessibilityDescription: "to-you timer")
@@ -45,7 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         NotificationCenter.default.addObserver(
             forName: .testAlarm, object: nil, queue: .main
-        ) { [weak self] _ in self?.notifyAndReveal() }
+        ) { [weak self] _ in self?.playTestAlarm() }
 
         NotificationCenter.default.addObserver(
             forName: .showHUD, object: nil, queue: .main
@@ -62,7 +61,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        // Popover content
         let content = TimerPopoverView(
             model: model,
             openSettings: { [weak self] in
@@ -123,9 +121,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.isVisible = true
         button.font = nil
         button.title = ""
-        if let img = NSImage(systemSymbolName: "umbrella", accessibilityDescription: "umbrella") {
+        if let img = NSImage(systemSymbolName: "umbrella", accessibilityDescription: "to-you timer") {
             img.isTemplate = true
-            img.accessibilityDescription = "to-you timer"
             button.image = img
             button.imagePosition = .imageOnly
         } else {
@@ -146,6 +143,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         guard UserDefaults.standard.bool(forKey: "notificationsEnabled") else { return }
         FinishedBanner.show(title: title, body: body)
+    }
+
+    private func playTestAlarm() {
+        alarmSound?.stop()
+        let volume = Float(UserDefaults.standard.object(forKey: "alarmVolume") as? Double ?? 0.5)
+        if let sound = NSSound(named: NSSound.Name("Glass")) {
+            sound.volume = max(Float(0.1), volume)
+            sound.play()
+            alarmSound = sound
+        }
+        let weatherRaw = UserDefaults.standard.string(forKey: "selectedWeather") ?? "Rain"
+        let weatherName = weatherRaw == "None" ? "storm" : weatherRaw.lowercased()
+        FinishedBanner.show(title: "The \(weatherName) has cleared.", body: BreakMessages.random())
     }
 
     private func playAlarm() {

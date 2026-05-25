@@ -30,8 +30,6 @@ struct SettingsView: View {
     @AppStorage("notificationsEnabled") private var notificationsEnabled: Bool = true
     @AppStorage("launchAtLogin")        private var launchAtLogin: Bool = false
 
-    @State private var applyFeedback = false
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
 
@@ -163,6 +161,9 @@ struct SettingsView: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
+                    .onChange(of: hudSize) { _, _ in
+                        NotificationCenter.default.post(name: .hudSettingsDidChange, object: nil)
+                    }
                 }
                 HStack(spacing: 4) {
                     Toggle("show umbrella in menu bar", isOn: Binding(
@@ -206,18 +207,6 @@ struct SettingsView: View {
                         Toggle("notifications", isOn: $notificationsEnabled)
                         InfoTipButton("Shows a system notification when the timer finishes.")
                     }
-                }
-                HStack {
-                    Spacer()
-                    Button(applyFeedback ? "✓ Applied" : "Apply Changes") {
-                        NotificationCenter.default.post(name: .hudSettingsDidChange, object: nil)
-                        applyFeedback = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            applyFeedback = false
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(applyFeedback)
                 }
             }
         }

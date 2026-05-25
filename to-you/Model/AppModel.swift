@@ -25,6 +25,8 @@ final class AppModel: ObservableObject {
     private let engine = TimerEngine()
     private var bag = Set<AnyCancellable>()
     private var workDuration: Int = 0
+    private var lastPresetSlot: Int = 0
+    private var lastPresetValue: Int = 0
 
     init() {
         UserDefaults.standard.register(defaults: [
@@ -34,8 +36,13 @@ final class AppModel: ObservableObject {
             "breakPreset2": 15,
             "breakPreset3": 30,
             "selectedBreakSlot": 1,
-            "selectedPresetSlot": 1
+            "selectedPresetSlot": 1,
+            "notificationsEnabled": true
         ])
+
+        lastPresetSlot = UserDefaults.standard.integer(forKey: "selectedPresetSlot").nonZeroOrDefault(1)
+        let initKey = lastPresetSlot == 2 ? "preset2" : lastPresetSlot == 3 ? "preset3" : "preset1"
+        lastPresetValue = UserDefaults.standard.integer(forKey: initKey).nonZeroOrDefault(25)
 
         engine.tick
             .receive(on: DispatchQueue.main)
@@ -52,6 +59,30 @@ final class AppModel: ObservableObject {
                 }
             }
             .store(in: &bag)
+
+        NotificationCenter.default
+            .publisher(for: UserDefaults.didChangeNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.syncDurationFromActivePreset() }
+            .store(in: &bag)
+    }
+
+    private func syncDurationFromActivePreset() {
+        guard !isRunning && !isPaused && !isBreakTimer else { return }
+        let slot = UserDefaults.standard.integer(forKey: "selectedPresetSlot").nonZeroOrDefault(1)
+        let key: String
+        switch slot {
+        case 2: key = "preset2"
+        case 3: key = "preset3"
+        default: key = "preset1"
+        }
+        let mins = UserDefaults.standard.integer(forKey: key).nonZeroOrDefault(25)
+        // Only sync when the preset configuration itself changed, not when lastDuration
+        // was written by setDuration() — which would create a revert feedback loop.
+        guard slot != lastPresetSlot || mins != lastPresetValue else { return }
+        lastPresetSlot = slot
+        lastPresetValue = mins
+        setDuration(seconds: mins * 60)
     }
 
     private func advancePomodoroIfNeeded() {

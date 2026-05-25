@@ -24,6 +24,7 @@ struct TimerPopoverView: View {
     @AppStorage("breakPreset2")       private var breakPreset2: Int = 15
     @AppStorage("breakPreset3")       private var breakPreset3: Int = 30
     @AppStorage("selectedBreakSlot")  private var selectedBreakSlot: Int = 1
+    @AppStorage("selectedPresetSlot") private var selectedPresetSlot: Int = 1
 
     @State private var sliderMinutes: Double = 25
     @State private var dragStartMinutes: Double? = nil
@@ -40,10 +41,14 @@ struct TimerPopoverView: View {
                 .padding(.top, 10)
 
             HStack(spacing: 14) {
-                presetButton(preset1, slot: 1)
-                presetButton(preset2, slot: 2)
-                presetButton(preset3, slot: 3)
-                pomoToggleButton
+                HStack(spacing: 14) {
+                    presetButton(preset1, slot: 1)
+                    presetButton(preset2, slot: 2)
+                    presetButton(preset3, slot: 3)
+                    pomoToggleButton
+                }
+                .opacity(model.isBreakTimer && (model.isRunning || model.isPaused) ? 0.25 : 1.0)
+                .allowsHitTesting(!(model.isBreakTimer && (model.isRunning || model.isPaused)))
                 Spacer()
                 HStack(spacing: 4) {
                     Button { toggleHUD() } label: {
@@ -64,8 +69,6 @@ struct TimerPopoverView: View {
                     .hoverHighlight()
                     .help("Open settings")
                     .accessibilityLabel("Open settings")
-                    dotsMenu
-                        .help("More options")
                 }
             }
             .padding(.horizontal, 14)
@@ -88,34 +91,51 @@ struct TimerPopoverView: View {
 
             Spacer()
 
-            if model.isBreakTimer && (model.isRunning || model.isPaused) {
-                let remaining = pomodoroCycles - model.cyclesCompleted
-                Text("\(remaining) \(remaining == 1 ? "cycle" : "cycles") left")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.bottom, 4)
-            }
+            VStack(spacing: 0) {
+                if pomodoroEnabled {
+                    HStack {
+                        dotsMenu
+                            .padding(.leading, 8)
+                            .help("More options")
+                        Spacer()
+                    }
 
-            HStack(alignment: .firstTextBaseline) {
-                controlButton
-                    .buttonStyle(.plain)
-                    .hoverHighlight()
-                    .padding(.leading, 8)
-                if model.isRunning || model.isPaused {
-                    Button("reset") { model.reset() }
+                    if model.isBreakTimer && (model.isRunning || model.isPaused) {
+                        let remaining = pomodoroCycles - model.cyclesCompleted
+                        HStack {
+                            Text("\(remaining) \(remaining == 1 ? "cycle" : "cycles") left")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                                .padding(.leading, 8)
+                            Spacer()
+                        }
+                        .padding(.bottom, 4)
+                    }
+                }
+
+                HStack(alignment: .firstTextBaseline) {
+                    if !pomodoroEnabled {
+                        dotsMenu
+                            .help("More options")
+                    }
+                    controlButton
                         .buttonStyle(.plain)
-                        .foregroundStyle(.secondary)
                         .hoverHighlight()
+                    if model.isRunning || model.isPaused {
+                        Button("reset") { model.reset() }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.secondary)
+                            .hoverHighlight()
+                    } else if pomodoroEnabled {
+                        Text("\(pomodoroCycles) \(pomodoroCycles == 1 ? "cycle" : "cycles")")
+                            .font(.callout)
+                            .foregroundStyle(.tertiary)
+                    }
+                    Spacer()
                 }
-                if pomodoroEnabled && !model.isRunning && !model.isPaused {
-                    Text("\(pomodoroCycles) \(pomodoroCycles == 1 ? "cycle" : "cycles")")
-                        .font(.callout)
-                        .foregroundStyle(.tertiary)
-                }
-                Spacer()
+                .padding(.leading, 8)
+                .padding(.bottom, 14)
             }
-            .padding(.bottom, 14)
             .overlay(alignment: .bottomTrailing) {
                 timeDisplay
                     .opacity(flashOpacity)
@@ -292,9 +312,10 @@ struct TimerPopoverView: View {
     }
 
     private func presetButton(_ minutes: Int, slot: Int) -> some View {
-        let isSelected = model.totalSeconds == minutes * 60
+        let isSelected = !model.isBreakTimer && model.totalSeconds == minutes * 60
         return Button(presetLabel(minutes)) {
             guard !model.isRunning && !model.isPaused else { return }
+            selectedPresetSlot = slot
             lastClickedSlot = slot
             sliderMinutes = Double(minutes)
             model.setDuration(seconds: minutes * 60)
