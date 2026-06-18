@@ -14,6 +14,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var isRunning: Bool = false
     @Published private(set) var isPaused: Bool = false
     @Published private(set) var isFinished: Bool = false
+    @Published private(set) var isBreakTimer: Bool = false
+    @Published private(set) var cyclesCompleted: Int = 0
 
     @Published var hudVisible: Bool = false
 
@@ -22,8 +24,29 @@ final class AppModel: ObservableObject {
 
     private let engine = TimerEngine()
     private var bag = Set<AnyCancellable>()
+    private var workDuration: Int = 0
+    private var lastPresetSlot: Int = 0
+    private var lastPresetValue: Int = 0
 
     init() {
+        UserDefaults.standard.register(defaults: [
+            "pomodoroEnabled": true,
+            "pomodoroCycles": 3,
+            "preset1": 25,
+            "preset2": 30,
+            "preset3": 45,
+            "breakPreset1": 5,
+            "breakPreset2": 15,
+            "breakPreset3": 30,
+            "selectedBreakSlot": 1,
+            "selectedPresetSlot": 1,
+            "notificationsEnabled": true
+        ])
+
+        lastPresetSlot = UserDefaults.standard.integer(forKey: "selectedPresetSlot").nonZeroOrDefault(1)
+        let initKey = lastPresetSlot == 2 ? "preset2" : lastPresetSlot == 3 ? "preset3" : "preset1"
+        lastPresetValue = UserDefaults.standard.integer(forKey: initKey).nonZeroOrDefault(25)
+
         engine.tick
             .receive(on: DispatchQueue.main)
             .sink { [weak self] left in
@@ -34,11 +57,86 @@ final class AppModel: ObservableObject {
                 if left == 0 {
                     self.isRunning = false
                     self.isPaused = false
-                    self.isFinished = true
                     self.onFinish?()
+                    self.advancePomodoroIfNeeded()
                 }
             }
             .store(in: &bag)
+
+        NotificationCenter.default
+            .publisher(for: UserDefaults.didChangeNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.syncDurationFromActivePreset() }
+            .store(in: &bag)
+    }
+
+    private func syncDurationFromActivePreset() {
+        guard !isRunning && !isPaused && !isBreakTimer else { return }
+        let slot = UserDefaults.standard.integer(forKey: "selectedPresetSlot").nonZeroOrDefault(1)
+        let key: String
+        switch slot {
+        case 2: key = "preset2"
+        case 3: key = "preset3"
+        default: key = "preset1"
+        }
+        let mins = UserDefaults.standard.integer(forKey: key).nonZeroOrDefault(25)
+        // Only sync when the preset configuration itself changed, not when lastDuration
+        // was written by setDuration() — which would create a revert feedback loop.
+        guard slot != lastPresetSlot || mins != lastPresetValue else { return }
+        lastPresetSlot = slot
+        lastPresetValue = mins
+        setDuration(seconds: mins * 60)
+    }
+
+    private func advancePomodoroIfNeeded() {
+        let enabled = UserDefaults.standard.bool(forKey: "pomodoroEnabled")
+        let maxCycles = UserDefaults.standard.integer(forKey: "pomodoroCycles").nonZeroOrDefault(3)
+        let breakSlot = UserDefaults.standard.integer(forKey: "selectedBreakSlot").nonZeroOrDefault(1)
+        let breakMins: Int
+        switch breakSlot {
+        case 2:  breakMins = UserDefaults.standard.integer(forKey: "breakPreset2").nonZeroOrDefault(15)
+        case 3:  breakMins = UserDefaults.standard.integer(forKey: "breakPreset3").nonZeroOrDefault(30)
+        default: breakMins = UserDefaults.standard.integer(forKey: "breakPreset1").nonZeroOrDefault(5)
+        }
+
+        guard enabled else {
+            isBreakTimer = false
+            cyclesCompleted = 0
+            isFinished = true
+            return
+        }
+
+        if !isBreakTimer {
+            // Work timer just finished
+            if cyclesCompleted < maxCycles {
+                cyclesCompleted += 1
+                isBreakTimer = true
+                let bd = breakMins * 60
+                totalSeconds = bd
+                secondsLeft = bd
+                engine.start(duration: bd)
+                isRunning = true
+                isFinished = false
+                return
+            }
+        } else {
+            // Break timer just finished
+            if cyclesCompleted < maxCycles {
+                isBreakTimer = false
+                let wd = workDuration
+                totalSeconds = wd
+                secondsLeft = wd
+                engine.start(duration: wd)
+                isRunning = true
+                isFinished = false
+                return
+            }
+        }
+
+        // All cycles done — full stop
+        isBreakTimer = false
+        cyclesCompleted = 0
+        isFinished = true
     }
 
     func setDuration(seconds: Int) {
@@ -57,6 +155,9 @@ final class AppModel: ObservableObject {
 
     func start(seconds: Int) {
         let nonZero = max(1, seconds)
+        workDuration = nonZero
+        isBreakTimer = false
+        cyclesCompleted = 0
         totalSeconds = nonZero
         UserDefaults.standard.set(nonZero, forKey: "lastDuration")
         secondsLeft = nonZero
@@ -85,7 +186,29 @@ final class AppModel: ObservableObject {
         isPaused = false
         isRunning = false
         isFinished = false
+        if isBreakTimer && workDuration > 0 {
+            totalSeconds = workDuration
+            UserDefaults.standard.set(workDuration, forKey: "lastDuration")
+        }
+        isBreakTimer = false
+        cyclesCompleted = 0
         secondsLeft = totalSeconds
+    }
+
+    /// Reset to a specific duration in one atomic step — no guards, no two-step race.
+    /// Use this when the caller knows exactly what duration to land on (e.g. selected preset).
+    func resetTo(seconds: Int) {
+        engine.stop()
+        isPaused = false
+        isRunning = false
+        isFinished = false
+        isBreakTimer = false
+        cyclesCompleted = 0
+        let s = max(1, seconds)
+        totalSeconds = s
+        secondsLeft = s
+        workDuration = s
+        UserDefaults.standard.set(s, forKey: "lastDuration")
     }
 
     func formatted(_ seconds: Int) -> String {
@@ -123,7 +246,7 @@ final class AppModel: ObservableObject {
         let h = seconds / 3600
         let m = (seconds % 3600) / 60
         let s = seconds % 60
-        if h > 0 { return m > 0 ? "\(h)hr \(m)m \(s)s" : "\(h)hr \(s)s" }
+        if h > 0 { return "\(h)hr \(m)m \(s)s" }
         if m > 0 { return "\(m)m \(s)s" }
         return "\(s)s"
     }

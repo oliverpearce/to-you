@@ -1,3 +1,4 @@
+
 //
 //  WeatherScene.swift
 //  to-you.
@@ -8,18 +9,11 @@ enum WeatherType: String, CaseIterable, Identifiable {
     case none = "None"
     case rain = "Rain"
     case snow = "Snow"
-    case fog  = "Fog"
     var id: String { rawValue }
 }
 
 struct WeatherScene {
-    // Three-cloud banner — tiles seamlessly and scrolls horizontally
-    private static let cloudArt: [String] = [
-        "  .---.   .---------.   .----.  ",
-        " (     ) (           ) (      ) ",
-        "  `---'   `---------'   `----'  "
-    ]
-
+    
     // Sunshine scene shown when timer finishes
     private static let sunshineArt: [String] = [
         "  *      *    *      *    *     ",
@@ -48,18 +42,17 @@ struct WeatherScene {
         guard weather != .none else {
             return Array(repeating: padded("", to: width), count: height).joined(separator: "\n")
         }
-        let cloudLen = cloudArt[0].count
-        let cloudScroll = tick % max(1, cloudLen)
-        let clouds = showClouds ? cloudArt.map { tiledScrolled($0, to: width, offset: cloudScroll) } : []
-        let bodyHeight = max(0, height - clouds.count)
+//        let cloudLen = cloudArt[0].count
+//        let cloudScroll = tick % max(1, cloudLen)
+//        let clouds = showClouds ? cloudArt.map { tiledScrolled($0, to: width, offset: cloudScroll) } : []
+        let bodyHeight = max(0, height)
         let body: [String]
         switch weather {
         case .rain: body = rainRows(width: width, height: bodyHeight, tick: tick)
         case .snow: body = snowRows(width: width, height: bodyHeight, tick: tick)
-        case .fog:  body = fogRows(width: width, height: bodyHeight, tick: tick)
         case .none: body = Array(repeating: padded("", to: width), count: bodyHeight)
         }
-        return (clouds + body).joined(separator: "\n")
+        return (body).joined(separator: "\n")
     }
 
     // MARK: - Sunshine
@@ -111,31 +104,6 @@ struct WeatherScene {
             }
         }
         return grid.map { String($0) }
-    }
-
-    // MARK: - Fog (horizontal drift)
-    //
-    // Each row gets its own noise-seeded character pattern (generated once from
-    // the row index), then tiledScrolled shifts it right by one column every 2
-    // ticks — same helper the cloud banner uses, so scrolling is guaranteed visible.
-
-    private static let fogChars: [Character] = ["~", "~", "-", " ", " "]
-
-    private static func fogRows(width: Int, height: Int, tick: Int) -> [String] {
-        guard height > 0, width > 0 else { return [] }
-        let patternLen = width + 16
-        let drift = tick / 2
-        return (0..<height).map { row in
-            var pattern = ""
-            pattern.reserveCapacity(patternLen)
-            for i in 0..<patternLen {
-                let r = noise(i, row)
-                pattern.append(r < 0.50
-                    ? fogChars[Int(r / 0.50 * Double(fogChars.count))]
-                    : " ")
-            }
-            return tiledScrolled(pattern, to: width, offset: -drift)
-        }
     }
 
     // MARK: - Helpers
