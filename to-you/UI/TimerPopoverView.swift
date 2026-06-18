@@ -97,19 +97,13 @@ struct TimerPopoverView: View {
                         dotsMenu
                             .padding(.leading, 8)
                             .help("More options")
-                        Spacer()
-                    }
-
-                    if model.isBreakTimer && (model.isRunning || model.isPaused) {
-                        let remaining = pomodoroCycles - model.cyclesCompleted
-                        HStack {
+                        if model.isBreakTimer && (model.isRunning || model.isPaused) {
+                            let remaining = pomodoroCycles - model.cyclesCompleted
                             Text("\(remaining) \(remaining == 1 ? "cycle" : "cycles") left")
                                 .font(.caption)
                                 .foregroundStyle(.tertiary)
-                                .padding(.leading, 8)
-                            Spacer()
                         }
-                        .padding(.bottom, 4)
+                        Spacer()
                     }
                 }
 
@@ -122,7 +116,7 @@ struct TimerPopoverView: View {
                         .buttonStyle(.plain)
                         .hoverHighlight()
                     if model.isRunning || model.isPaused {
-                        Button("reset") { model.reset() }
+                        Button("reset") { resetToPreset() }
                             .buttonStyle(.plain)
                             .foregroundStyle(.secondary)
                             .hoverHighlight()
@@ -312,11 +306,14 @@ struct TimerPopoverView: View {
     }
 
     private func presetButton(_ minutes: Int, slot: Int) -> some View {
-        let isSelected = !model.isBreakTimer && model.totalSeconds == minutes * 60
+        let isSelected = !model.isBreakTimer && selectedPresetSlot == slot
         return Button(presetLabel(minutes)) {
-            guard !model.isRunning && !model.isPaused else { return }
+            // Always update the selected slot so the reset target is correct
+            // even when the user picks a pill while the timer is running.
             selectedPresetSlot = slot
             lastClickedSlot = slot
+            // Only change the live timer duration when idle.
+            guard !model.isRunning && !model.isPaused else { return }
             sliderMinutes = Double(minutes)
             model.setDuration(seconds: minutes * 60)
         }
@@ -354,7 +351,7 @@ struct TimerPopoverView: View {
                 .disabled(model.isRunning || model.isPaused)
             Divider()
             if model.isRunning || model.isPaused || model.isFinished {
-                Button("Reset Timer") { model.reset() }
+                Button("Reset Timer") { resetToPreset() }
                 Divider()
             }
             Button("Settings...") { openSettings() }
@@ -377,6 +374,24 @@ struct TimerPopoverView: View {
     }
 
     // MARK: - Helpers
+
+    /// Reset the timer and snap duration to the currently highlighted preset pill.
+    /// Reads directly from UserDefaults (not @AppStorage) to guarantee fresh values —
+    /// @AppStorage in a non-visible hosting view may lag behind UserDefaults.
+    private func resetToPreset() {
+        let slot = UserDefaults.standard.integer(forKey: "selectedPresetSlot")
+        let resolvedSlot = slot == 0 ? 1 : slot
+        let key: String
+        switch resolvedSlot {
+        case 2: key = "preset2"
+        case 3: key = "preset3"
+        default: key = "preset1"
+        }
+        let raw = UserDefaults.standard.integer(forKey: key)
+        let mins = raw > 0 ? raw : 25
+        sliderMinutes = Double(mins)
+        model.resetTo(seconds: mins * 60)
+    }
 
     private func syncSlider() {
         sliderMinutes = min(600, Double(model.totalSeconds / 60))

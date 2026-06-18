@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let settings = SettingsWindowController()
     private var bag = Set<AnyCancellable>()
     private var alarmSound: NSSound?
+    private var clickOutsideMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -34,7 +35,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
             if isRunning || isPaused || isBreakTimer {
                 self.updateStatusButton(secondsLeft: secondsLeft, isPaused: isPaused)
-            } else {
+            } else if !self.popover.isShown {
+                // Only shrink the status item to the umbrella icon when the popover
+                // is NOT visible — changing button width while it's the popover's
+                // anchor causes the popover to jump/reposition.  popoverDidClose(_:)
+                // handles the flush when the popover is dismissed.
                 self.resetStatusButton()
             }
         }
@@ -85,18 +90,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         )
-        popover.behavior = .transient
+        // .applicationDefined keeps the popover alive when the in-popover NSMenu
+        // (dots "···" menu) opens — .transient would close it immediately since
+        // NSMenu takes focus.  A global event monitor handles "click outside app"
+        // to restore the standard dismiss-on-click-away behaviour.
+        popover.behavior = .applicationDefined
+        popover.delegate = self
         popover.contentSize = NSSize(width: 320, height: 168)
         popover.contentViewController = NSViewController()
         popover.contentViewController?.view = FirstMouseHostingView(rootView: content)
+
+        // Close the popover when the user clicks in another app (replicates .transient
+        // for external clicks while leaving in-app NSMenus unaffected).
+        clickOutsideMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            guard let self, self.popover.isShown else { return }
+            self.popover.performClose(nil)
+        }
     }
 
     @objc private func togglePopover(_ sender: Any?) {
-        guard let button = statusItem.button else { return }
         if popover.isShown {
             popover.performClose(sender)
         } else {
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            // Defer one runloop so the status item's button frame is stable
+            // after any title update (prevents snap-to-left positioning bug)
+            DispatchQueue.main.async { [weak self] in
+                guard let self, let button = self.statusItem.button else { return }
+                self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            }
         }
     }
 
@@ -147,12 +168,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func playTestAlarm() {
         alarmSound?.stop()
-        let volume = Float(UserDefaults.standard.object(forKey: "alarmVolume") as? Double ?? 0.5)
-        if let sound = NSSound(named: NSSound.Name("Glass")) {
-            sound.volume = max(Float(0.1), volume)
-            sound.play()
-            alarmSound = sound
+        if !UserDefaults.standard.bool(forKey: "forceMuteAlarm") {
+            let volume = Float(UserDefaults.standard.object(forKey: "alarmVolume") as? Double ?? 0.5)
+            if let sound = NSSound(named: NSSound.Name("Glass")) {
+                sound.volume = max(Float(0.1), volume)
+                sound.play()
+                alarmSound = sound
+            }
         }
+        guard UserDefaults.standard.bool(forKey: "notificationsEnabled") else { return }
         let weatherRaw = UserDefaults.standard.string(forKey: "selectedWeather") ?? "Rain"
         let weatherName = weatherRaw == "None" ? "storm" : weatherRaw.lowercased()
         FinishedBanner.show(title: "The \(weatherName) has cleared.", body: BreakMessages.random())
@@ -166,5 +190,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         sound.volume = volume
         sound.play()
         alarmSound = sound
+    }
+}
+
+// MARK: - NSPopoverDelegate
+
+extension AppDelegate: NSPopoverDelegate {
+    /// Called after the popover finishes closing.  We defer the status-button
+    /// reset to here so the button doesn't shrink *while* it's the popover's
+    /// anchor — which would make the popover jump sideways.
+    func popoverDidClose(_ notification: Notification) {
+        if !model.isRunning && !model.isPaused && !model.isBreakTimer {
+            resetStatusButton()
+        }
     }
 }

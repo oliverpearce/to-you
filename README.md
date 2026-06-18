@@ -38,13 +38,13 @@ a productivity timer tool brought to-you by [oliver pearce](https://github.com/o
 to-you/
 ├─ to_you_App.swift
 ├─ appDelegate.swift
-├─ ContentView.swift
 ├─ to_you_.entitlements
 ├─ Model/
 │  ├─ AppModel.swift
 │  ├─ BreakMessages.swift
 │  ├─ FontTheme.swift
 │  ├─ HUDSize.swift
+│  ├─ TimeFormat.swift
 │  ├─ TimerEngine.swift
 │  └─ WeatherScene.swift
 ├─ UI/

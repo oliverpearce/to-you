@@ -32,6 +32,9 @@ final class AppModel: ObservableObject {
         UserDefaults.standard.register(defaults: [
             "pomodoroEnabled": true,
             "pomodoroCycles": 3,
+            "preset1": 25,
+            "preset2": 30,
+            "preset3": 45,
             "breakPreset1": 5,
             "breakPreset2": 15,
             "breakPreset3": 30,
@@ -190,6 +193,22 @@ final class AppModel: ObservableObject {
         isBreakTimer = false
         cyclesCompleted = 0
         secondsLeft = totalSeconds
+    }
+
+    /// Reset to a specific duration in one atomic step — no guards, no two-step race.
+    /// Use this when the caller knows exactly what duration to land on (e.g. selected preset).
+    func resetTo(seconds: Int) {
+        engine.stop()
+        isPaused = false
+        isRunning = false
+        isFinished = false
+        isBreakTimer = false
+        cyclesCompleted = 0
+        let s = max(1, seconds)
+        totalSeconds = s
+        secondsLeft = s
+        workDuration = s
+        UserDefaults.standard.set(s, forKey: "lastDuration")
     }
 
     func formatted(_ seconds: Int) -> String {
