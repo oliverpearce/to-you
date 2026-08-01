@@ -75,72 +75,59 @@
     .cta-btn:hover { opacity: 0.78; }
     .cta-free { font-size: 13px; color: var(--fg-3); }
 
-    /* ── App mockup ── */
-    /*
-     * TODO: replace this CSS mockup with a real screenshot once
-     * App Store screenshots are captured (see APP_STORE_SUBMISSION.md Step 4).
-     * Use Screenshot 3 (Floating HUD) cropped to the window bounds.
-     * Drop the <img> inside .mockup-shell and remove the ASCII markup.
-     */
-    .mockup-wrap {
-      max-width: 400px;
+    /* ── Hero screenshot ── */
+    .hero-screenshot {
+      max-width: 720px;
       margin: 56px auto 0;
       padding: 0 22px;
-      position: relative;
     }
-    .mockup-menubar {
-      background: rgba(30,30,30,0.92);
-      border-radius: 8px 8px 0 0;
-      height: 28px;
-      display: flex; align-items: center;
-      justify-content: flex-end;
-      padding: 0 14px;
-      gap: 14px;
+    .hero-screenshot img {
+      width: 100%;
+      border-radius: 16px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.10);
+      display: block;
     }
-    .menubar-icon {
-      font-size: 14px; color: rgba(255,255,255,0.9);
-      font-family: -apple-system, sans-serif;
+
+    /* ── Screenshot gallery ── */
+    .screenshots {
+      max-width: 980px;
+      margin: 80px auto 0;
+      padding: 0 22px;
     }
-    .menubar-dots {
-      display: flex; gap: 5px; position: absolute; left: 36px;
+    .screenshots-eyebrow {
+      font-size: 13px; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--fg-2); text-align: center; margin-bottom: 12px;
     }
-    .menubar-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: rgba(255,255,255,0.25);
+    .screenshots h2 {
+      font-size: clamp(28px, 4vw, 40px); font-weight: 700;
+      letter-spacing: -0.02em; text-align: center;
+      color: var(--fg); margin-bottom: 40px; line-height: 1.1;
     }
-    .mockup-shell {
-      background: rgba(20,20,22,0.96);
-      border-radius: 0 0 16px 16px;
-      overflow: hidden;
-      box-shadow:
-        0 0 0 0.5px rgba(255,255,255,0.08) inset,
-        0 24px 80px rgba(0,0,0,0.28),
-        0 4px 16px rgba(0,0,0,0.14);
-      padding: 18px 0 22px;
+    .screenshot-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
     }
-    .mockup-scene {
-      font-family: "SF Mono", "Menlo", "Courier New", monospace;
-      font-size: 11.5px; line-height: 1.55;
-      color: rgba(255,255,255,0.22);
-      white-space: pre;
-      text-align: left;
-      padding: 0 18px;
-      overflow: hidden;
-      user-select: none;
+    .screenshot-item img {
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08);
+      display: block;
     }
-    .mockup-timer {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-      font-size: 52px; font-weight: 700;
-      letter-spacing: -0.03em;
-      color: rgba(255,255,255,0.92);
+    .screenshot-caption {
+      font-size: 13px;
+      color: var(--fg-3);
       text-align: center;
-      padding: 6px 0 8px;
-      text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+      margin-top: 10px;
+    }
+    @media (max-width: 680px) {
+      .screenshot-grid { grid-template-columns: 1fr; }
     }
 
     /* ── Features ── */
     .features {
-      max-width: 860px; margin: 88px auto 0; padding: 0 22px 96px;
+      max-width: 860px; margin: 80px auto 0; padding: 0 22px 96px;
     }
     .features-eyebrow {
       font-size: 13px; font-weight: 600;
@@ -210,8 +197,30 @@
     <a class="cta-btn" href="#">Coming Soon — Free</a>
   </div>
 
-  <!-- App mockup -->
-  <img src="hud.png" alt="to-you floating timer with rain" style="max-width:100%;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,0.2);">
+  <!-- Hero screenshot -->
+  <div class="hero-screenshot">
+    <img src="assets/images/pop-up-timer.png" alt="to-you floating timer with ASCII rain scene">
+  </div>
+</div>
+
+<!-- Screenshot gallery -->
+<div class="screenshots">
+  <p class="screenshots-eyebrow">See it in action</p>
+  <h2>Everything you need.<br>Nothing you don't.</h2>
+  <div class="screenshot-grid">
+    <div class="screenshot-item">
+      <img src="assets/images/menu-bar-popup.png" alt="to-you menu bar popover with timer ready to start">
+      <p class="screenshot-caption">One click to start</p>
+    </div>
+    <div class="screenshot-item">
+      <img src="assets/images/pop-up-timer.png" alt="to-you floating display with ASCII rain during a focus session">
+      <p class="screenshot-caption">Rain while you focus</p>
+    </div>
+    <div class="screenshot-item">
+      <img src="assets/images/settings-menu.png" alt="to-you settings panel showing timer, pomodoro, and display options">
+      <p class="screenshot-caption">Yours to configure</p>
+    </div>
+  </div>
 </div>
 
 <!-- Features -->

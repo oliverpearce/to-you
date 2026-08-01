@@ -104,7 +104,7 @@ struct HUDTimerView: View {
                             HStack {
                                 circleButton(icon: "xmark", label: "Close") { onClose() }
                                 Spacer()
-                                circleButton(icon: "arrow.counterclockwise", label: "Restart") { model.start(seconds: model.totalSeconds) }
+                                circleButton(icon: "arrow.counterclockwise", label: "Restart") { model.resetToCurrentPreset() }
                             }
                             Spacer()
                             HStack {

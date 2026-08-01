@@ -19,7 +19,6 @@ final class AppModel: ObservableObject {
 
     @Published var hudVisible: Bool = false
 
-    var onTick: ((Int) -> Void)?
     var onFinish: (() -> Void)?
 
     private let engine = TimerEngine()
@@ -53,7 +52,6 @@ final class AppModel: ObservableObject {
                 guard let self = self else { return }
                 self.secondsLeft = max(0, left)
                 self.isRunning = self.engine.isRunning && !self.isPaused
-                self.onTick?(left)
                 if left == 0 {
                     self.isRunning = false
                     self.isPaused = false
@@ -148,11 +146,6 @@ final class AppModel: ObservableObject {
         UserDefaults.standard.set(s, forKey: "lastDuration")
     }
 
-    func start(minutes: Int) {
-        let secs = max(1, minutes) * 60
-        start(seconds: secs)
-    }
-
     func start(seconds: Int) {
         let nonZero = max(1, seconds)
         workDuration = nonZero
@@ -181,20 +174,6 @@ final class AppModel: ObservableObject {
         isRunning = true
     }
 
-    func reset() {
-        engine.stop()
-        isPaused = false
-        isRunning = false
-        isFinished = false
-        if isBreakTimer && workDuration > 0 {
-            totalSeconds = workDuration
-            UserDefaults.standard.set(workDuration, forKey: "lastDuration")
-        }
-        isBreakTimer = false
-        cyclesCompleted = 0
-        secondsLeft = totalSeconds
-    }
-
     /// Reset to a specific duration in one atomic step — no guards, no two-step race.
     /// Use this when the caller knows exactly what duration to land on (e.g. selected preset).
     func resetTo(seconds: Int) {
@@ -209,6 +188,18 @@ final class AppModel: ObservableObject {
         secondsLeft = s
         workDuration = s
         UserDefaults.standard.set(s, forKey: "lastDuration")
+    }
+
+    func resetToCurrentPreset() {
+        let slot = UserDefaults.standard.integer(forKey: "selectedPresetSlot").nonZeroOrDefault(1)
+        let key: String
+        switch slot {
+        case 2: key = "preset2"
+        case 3: key = "preset3"
+        default: key = "preset1"
+        }
+        let mins = UserDefaults.standard.integer(forKey: key).nonZeroOrDefault(25)
+        resetTo(seconds: mins * 60)
     }
 
     func formatted(_ seconds: Int) -> String {
