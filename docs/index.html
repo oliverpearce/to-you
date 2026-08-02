@@ -106,7 +106,13 @@
     }
     .screenshot-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: 3fr 2fr;
+      align-items: start;
+      gap: 16px;
+    }
+    .screenshot-col {
+      display: flex;
+      flex-direction: column;
       gap: 16px;
     }
     .screenshot-item img {
@@ -208,17 +214,21 @@
   <p class="screenshots-eyebrow">See it in action</p>
   <h2>Everything you need.<br>Nothing you don't.</h2>
   <div class="screenshot-grid">
-    <div class="screenshot-item">
-      <img src="assets/images/menu-bar-popup.png" alt="to-you menu bar popover with timer ready to start">
-      <p class="screenshot-caption">One click to start</p>
+    <!-- Left column: the two landscape shots stacked vertically -->
+    <div class="screenshot-col">
+      <div class="screenshot-item">
+        <img src="assets/images/menu-bar-popup.png" alt="to-you menu bar popover with timer ready to start">
+        <p class="screenshot-caption">Intuitive to use</p>
+      </div>
+      <div class="screenshot-item">
+        <img src="assets/images/pop-up-timer.png" alt="to-you floating display with ASCII rain during a focus session">
+        <p class="screenshot-caption">Minimalist timer aesthetic</p>
+      </div>
     </div>
-    <div class="screenshot-item">
-      <img src="assets/images/pop-up-timer.png" alt="to-you floating display with ASCII rain during a focus session">
-      <p class="screenshot-caption">Rain while you focus</p>
-    </div>
+    <!-- Right column: the tall settings shot -->
     <div class="screenshot-item">
       <img src="assets/images/settings-menu.png" alt="to-you settings panel showing timer, pomodoro, and display options">
-      <p class="screenshot-caption">Yours to configure</p>
+      <p class="screenshot-caption">Yours to control</p>
     </div>
   </div>
 </div>
