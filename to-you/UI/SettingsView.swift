@@ -4,6 +4,7 @@
 
 import SwiftUI
 import ServiceManagement
+import AppKit
 
 struct SettingsView: View {
     @AppStorage("preset1")              private var preset1: Int = 25
@@ -207,6 +208,18 @@ struct SettingsView: View {
                         Toggle("notifications", isOn: $notificationsEnabled)
                         InfoTipButton("Shows a system notification when the timer finishes.")
                     }
+                }
+            }
+
+            Divider()
+
+            // — Quit —
+            section {
+                HStack {
+                    Spacer()
+                    Button("Quit to-you") { NSApplication.shared.terminate(nil) }
+                        .buttonStyle(.bordered)
+                    Spacer()
                 }
             }
         }

@@ -33,13 +33,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         .receive(on: DispatchQueue.main)
         .sink { [weak self] secondsLeft, isPaused, isRunning, isBreakTimer in
             guard let self else { return }
+            // While the popover is open, NEVER resize the status button — it is the
+            // popover's anchor, and status items grow leftward, so changing its width
+            // yanks the open popover to the top-left.  popoverDidClose(_:) refreshes
+            // the button to the correct state once the popover is dismissed.
+            guard !self.popover.isShown else { return }
             if isRunning || isPaused || isBreakTimer {
                 self.updateStatusButton(secondsLeft: secondsLeft, isPaused: isPaused)
-            } else if !self.popover.isShown {
-                // Only shrink the status item to the umbrella icon when the popover
-                // is NOT visible — changing button width while it's the popover's
-                // anchor causes the popover to jump/reposition.  popoverDidClose(_:)
-                // handles the flush when the popover is dismissed.
+            } else {
                 self.resetStatusButton()
             }
         }
@@ -200,7 +201,11 @@ extension AppDelegate: NSPopoverDelegate {
     /// reset to here so the button doesn't shrink *while* it's the popover's
     /// anchor — which would make the popover jump sideways.
     func popoverDidClose(_ notification: Notification) {
-        if !model.isRunning && !model.isPaused && !model.isBreakTimer {
+        // Now that the popover is gone, safely refresh the status button to reflect
+        // the current timer state (resizing is fine — nothing is anchored to it).
+        if model.isRunning || model.isPaused || model.isBreakTimer {
+            updateStatusButton(secondsLeft: model.secondsLeft, isPaused: model.isPaused)
+        } else {
             resetStatusButton()
         }
     }

@@ -350,10 +350,6 @@ struct TimerPopoverView: View {
             Toggle("Pomodoro", isOn: $pomodoroEnabled)
                 .disabled(model.isRunning || model.isPaused)
             Divider()
-            if model.isRunning || model.isPaused || model.isFinished {
-                Button("Reset Timer") { resetToPreset() }
-                Divider()
-            }
             Button("Settings...") { openSettings() }
             Divider()
             Button(model.hudVisible ? "Hide Floating Display" : "Show Floating Display") {
